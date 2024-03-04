@@ -45,3 +45,7 @@ To ensure smooth operation of the RSL Dynamic Mapping, the following dependencie
 ## License
 
 RSL Dynamic Mapping is released under a the MIT Licence.
+
+## Authorship
+
+This package was authored by Pol Eyschen.
