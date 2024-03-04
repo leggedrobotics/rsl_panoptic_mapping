@@ -1,0 +1,5 @@
+pointcloud_topic: "/ouster_points_self_filtered"
+image_topic: "/camMainView/image_raw/compressed"
+output_topic: "matched_messages"
+lidar_frequency: 10 #Hz
+sensor_offset: 0.75

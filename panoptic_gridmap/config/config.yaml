@@ -1,0 +1,27 @@
+map:
+  frame_id: "map"
+  origin:
+    x: 0.0
+    y: 0.0
+  height: 130
+  width: 90
+  resolution: 1.0
+  map_topic: "grid_map"
+
+grid_map_filters_label:
+  - name: median
+    type: gridMapFilters/MedianFillFilter
+    params:
+      input_layer: label
+      output_layer: label
+      fill_hole_radius: 0.2
+      existing_value_radius: 0.2
+      filter_existing_values: true
+      fill_mask_layer: fill_mask_label
+      num_erode_dilation_iterations: 2
+
+
+topics:
+  dynamic_pcl_topic_sub: "/new_cloud/dynamic"
+  static_pcl_topic_sub: "/new_cloud/static"
+  map_topic_pub: "/semantic_map"

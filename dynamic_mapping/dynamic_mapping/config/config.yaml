@@ -1,0 +1,63 @@
+dynamic_mapping:
+  verbose: true
+  cluster_topic: "/cluster_cloud"
+  detection_topic: "/bboxes"
+  track_topic: "/tracker_bboxes"
+  output_topic: "/new_cloud"
+  camera_info_topic: "/camMainView/camera_info"
+  should_undistort: false #true if the code should undistort the image, usually not necessary
+
+message_processor:
+  matched_message_topic: "/message_matching_nodelet/matched_messages"
+  segmentation_mask_topic: "/src/mask"
+
+object_filter:
+  strict_segmentation: true
+  segment_on_ground_removed_cloud: true
+  minimum_cluster_size: 10
+  filter_labels: [0,1,2,3,4,5,6,26,27,28,29,30,31]
+  missed_detection_distance: 1.5
+  deletion_covar_trace_threshold: 15
+  initiation_covar_trace_threshold: 100
+  velocity_threshold: 0.5
+  bounding_box_scaling: 1.0
+  minimum_initiation_points: 3
+  shovel_distance_threshold: 1.5
+  extent_velocity_threshold: 1.5
+  
+ground_plane_removal:
+  elevation_map:
+    min_height_above_ground: 0.25
+    max_height_above_ground: 3.5
+    is_use_median_filter: true
+    median_filtering_radius: 1.5
+    median_filter_points_downsample_factor: 1
+    num_processing_threads: 10
+    cloud_transform:
+      translation:
+        x: 0.0
+        y: 0.0
+        z: 0.0
+      rotation: #intrinsic rotation X-Y-Z (r-p-y)sequence
+        r: 0.0
+        p: 0.0
+        y: 0.0
+    cluster_extraction:
+      cluster_tolerance: 0.02
+      min_num_points: 1
+      max_num_points: 1000000
+      use_max_height_as_cell_elevation: false
+    outlier_removal:
+      is_remove_outliers: false
+      mean_K: 10
+      stddev_threshold: 1.0
+    downsampling:
+      is_downsample_cloud: false
+      voxel_size:
+        x: 0.02
+        y: 0.02
+        z: 0.02
+    grid_map:
+      min_num_points_per_cell: 1
+      max_num_points_per_cell: 100000
+      resolution: 0.5
