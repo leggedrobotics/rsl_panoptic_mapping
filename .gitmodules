@@ -1,0 +1,3 @@
+[submodule "panoptic_segmentation"]
+	path = panoptic_segmentation
+	url = git@github.com:leggedrobotics/rsl_panoptic.git
