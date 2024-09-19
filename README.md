@@ -14,6 +14,8 @@ RSL Panoptic Mapping is a ROS package for advanced environment understanding and
 - **Filtering and Fusion:** Applies filters to improve map accuracy.
 - **ROS Integration:** Fully integrated with ROS.
 
+Please check the subpackages README.md for more information
+
 ## Installation
 
 Ensure ROS is installed. This package depends on several external ROS packages and libraries.
