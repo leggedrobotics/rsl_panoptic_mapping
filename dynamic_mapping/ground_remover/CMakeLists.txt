@@ -1,90 +1,94 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(ground_remover)
 
+# Set C++ standard and compile options
 set(CMAKE_CXX_STANDARD 14)
 add_compile_options(-Wall -Wextra -Wpedantic)
 
+# Find required dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
 find_package(PCL 1.10 REQUIRED)
+find_package(ground_plane_removal REQUIRED)
+find_package(tree_detection_ros REQUIRED)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+# Include directories
+include_directories(
+    include
+    ${PCL_INCLUDE_DIRS}
+)
 
-## Find catkin macros and libraries
-## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
-## is used, also find other catkin packages
-find_package(catkin REQUIRED
-    COMPONENTS
+link_directories(
+    ${PCL_LIBRARY_DIRS}
+)
+
+add_definitions(
+    ${PCL_DEFINITIONS}
+)
+
+# Declare the library
+add_library(${PROJECT_NAME} SHARED
+    src/elevation_map_ground_remover.cpp
+)
+
+# Declare the executable
+add_executable(${PROJECT_NAME}_node
+    src/ground_remover_node.cpp
+    src/ground_remover_ros.cpp
+)
+
+# Link libraries to the executable
+target_link_libraries(${PROJECT_NAME}_node
+    ${PROJECT_NAME}
+    ${PCL_COMMON_LIBRARIES}
+    ${PCL_IO_LIBRARIES}
+)
+
+# Link dependencies to the library
+ament_target_dependencies(${PROJECT_NAME}
+    rclcpp
+    sensor_msgs
+    pcl_conversions
     ground_plane_removal
     tree_detection_ros
-    pcl_conversions
+)
+
+ament_target_dependencies(${PROJECT_NAME}_node
+    rclcpp
     sensor_msgs
-    roscpp
-    roslib
-    )
-
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES ground_remover
-  CATKIN_DEPENDS ground_plane_removal tree_detection_ros
-  DEPENDS PCL
+    pcl_conversions
+    ground_plane_removal
+    tree_detection_ros
 )
 
-###########
-## Build ##
-###########
-
-include_directories(
-     include
-     ${PCL_INCLUDE_DIRS}
-     ${catkin_INCLUDE_DIRS}
-
-)
-link_directories( #only needed for pcl
-  ${PCL_LIBRARY_DIRS}
+# Install the library
+install(
+    TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_node
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
 )
 
-add_definitions( #only needed for pcl
-  ${PCL_DEFINITIONS}
+# Install include files
+install(
+    DIRECTORY include/${PROJECT_NAME}/
+    DESTINATION include/${PROJECT_NAME}
 )
 
-## Declare a C++ library
- add_library(${PROJECT_NAME}
-   src/elevation_map_ground_remover.cpp
- )
-
-add_executable(${PROJECT_NAME}_node src/ground_remover_node.cpp src/ground_remover_ros.cpp)
-target_link_libraries(${PROJECT_NAME}_node
-  ${PROJECT_NAME}
-  ${catkin_LIBRARIES}
-  ${PCL_COMMON_LIBRARIES}
-  ${PCL_IO_LIBRARIES}
-)
-
-# Add clang tooling
+# Enable clang tooling
 if(NOT DEFINED NO_CLANG_TOOLING)
-  find_package(cmake_clang_tools QUIET)
-  if(cmake_clang_tools_FOUND AND NOT DEFINED NO_CLANG_TOOLING)
-    add_clang_tooling(
+    find_package(cmake_clang_tools QUIET)
+    if(cmake_clang_tools_FOUND AND NOT DEFINED NO_CLANG_TOOLING)
+        add_clang_tooling(
             TARGET ${PROJECT_NAME}
             SOURCE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/src ${CMAKE_CURRENT_SOURCE_DIR}/include
             CT_HEADER_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include
             CF_FIX
-    )
-  endif(cmake_clang_tools_FOUND AND NOT DEFINED NO_CLANG_TOOLING)
+        )
+    endif()
 endif()
 
-#############
-## Install ##
-#############
-
-install(TARGETS ${PROJECT_NAME}
-  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-  RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
-)
-
-
-install(DIRECTORY include/${PROJECT_NAME}/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-)
+# Finalize the package
+ament_package()

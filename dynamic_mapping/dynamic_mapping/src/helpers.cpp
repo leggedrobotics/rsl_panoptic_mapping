@@ -1,12 +1,14 @@
 #include "dynamic_mapping/helpers.h"
 #include <sensor_msgs/point_cloud2_iterator.h>
 
+// Convert Eigen points to Open3D PointCloud
 open3d::geometry::PointCloud eigenToOpen3d(const Eigen::Matrix3Xd& pts) {
   std::vector<Eigen::Vector3d> pointsVector;
   for (auto col : pts.colwise()) pointsVector.push_back(col.transpose());
   return open3d::geometry::PointCloud(pointsVector);
 }
 
+// Get cluster indices by ID
 std::vector<int> getClusterIndices(const std::vector<int>& clusters, int clusterId) {
   std::vector<int> results;
   auto it = clusters.begin();
@@ -17,13 +19,15 @@ std::vector<int> getClusterIndices(const std::vector<int>& clusters, int cluster
   return results;
 }
 
+// Get axis-aligned bounding box
 open3d::geometry::AxisAlignedBoundingBox getBoundingBox(const Eigen::Matrix3Xd& pts) {
   open3d::geometry::PointCloud pcl = eigenToOpen3d(pts);
   return pcl.GetAxisAlignedBoundingBox();
 }
 
-jsk_recognition_msgs::BoundingBox generateBoundingBoxMsg(const BoundingBox& bbox) {
-  jsk_recognition_msgs::BoundingBox bboxMsg;
+// Generate bounding box message
+jsk_recognition_msgs::msg::BoundingBox generateBoundingBoxMsg(const BoundingBox& bbox) {
+  jsk_recognition_msgs::msg::BoundingBox bboxMsg;
   bboxMsg.pose.position.x = bbox.center.x();
   bboxMsg.pose.position.y = bbox.center.y();
   bboxMsg.pose.position.z = bbox.center.z();
@@ -39,11 +43,13 @@ jsk_recognition_msgs::BoundingBox generateBoundingBoxMsg(const BoundingBox& bbox
   return bboxMsg;
 }
 
+// Convert detection to state
 Eigen::Vector<double, 9> stateFromDetection(const Detection& det) {
   Eigen::Vector<double, 9> state{det.centroid[0], 0, det.centroid[1], 0, det.centroid[2], 0, det.extent[0], det.extent[1], det.extent[2]};
   return state;
 }
 
+// Mahalanobis distance calculation
 double mahalanobis(const Eigen::VectorXd& state1, const Eigen::VectorXd& state2, const Eigen::MatrixXd& cov1) {
   auto delta = state1 - state2;
   auto vi = cov1.inverse();
@@ -51,8 +57,8 @@ double mahalanobis(const Eigen::VectorXd& state1, const Eigen::VectorXd& state2,
   return sqrt(mahalanobisSqr(0, 0));
 }
 
-sensor_msgs::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters) {
-  int numCols = 0;
+// Generate labeled cluster PointCloud2
+sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters) {  int numCols = 0;
   for (const auto& mat : labelledClusters) {
     numCols += mat.cols();
   }
@@ -66,21 +72,22 @@ sensor_msgs::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matr
     clusters.insert(clusters.end(), cluster.begin(), cluster.end());
     colOffset += cols;
   }
-  using namespace sensor_msgs;
-  PointCloud2 outCloud;
+  sensor_msgs::msg::PointCloud2 outCloud;
   outCloud.height = 1;
   outCloud.width = concatMat.cols();
   outCloud.header.frame_id = "map";
-  outCloud.header.stamp = ros::Time::now();
-  PointCloud2Modifier outCloudModifier(outCloud);
-  outCloudModifier.setPointCloud2Fields(5, "x", 1, PointField::FLOAT32, "y", 1, PointField::FLOAT32, "z", 1, PointField::FLOAT32, "cluster",
-                                        1, PointField::INT32, "label", 1, PointField::INT32);
+  outCloud.header.stamp = rclcpp::Clock().now();
 
-  PointCloud2Iterator<float> x_iter(outCloud, "x");
-  PointCloud2Iterator<float> y_iter(outCloud, "y");
-  PointCloud2Iterator<float> z_iter(outCloud, "z");
-  PointCloud2Iterator<int> cluster_iter(outCloud, "cluster");
-  PointCloud2Iterator<int> label_iter(outCloud, "label");
+  sensor_msgs::PointCloud2Modifier outCloudModifier(outCloud);
+  outCloudModifier.setPointCloud2Fields(5, "x", 1, sensor_msgs::msg::PointField::FLOAT32, "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                        "z", 1, sensor_msgs::msg::PointField::FLOAT32, "cluster", 1, sensor_msgs::msg::PointField::INT32,
+                                        "label", 1, sensor_msgs::msg::PointField::INT32);
+
+  sensor_msgs::PointCloud2Iterator<float> x_iter(outCloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> y_iter(outCloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> z_iter(outCloud, "z");
+  sensor_msgs::PointCloud2Iterator<int> cluster_iter(outCloud, "cluster");
+  sensor_msgs::PointCloud2Iterator<int> label_iter(outCloud, "label");
   Eigen::RowVectorXd x, y, z;
   Eigen::RowVectorXi label;
   x = concatMat.row(0);
@@ -98,35 +105,29 @@ sensor_msgs::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matr
   return outCloud;
 }
 
-sensor_msgs::PointCloud2 eigenToRos(const Eigen::Matrix4Xd& cloud, const std::string& frame_id) {
-  using namespace sensor_msgs;
-  PointCloud2 outCloud;
+// Eigen to ROS PointCloud2 conversion
+sensor_msgs::msg::PointCloud2 eigenToRos(const Eigen::Matrix4Xd& cloud, const std::string& frame_id) {  
+  sensor_msgs::msg::PointCloud2 outCloud;
   outCloud.header.frame_id = frame_id;
-  outCloud.header.stamp = ros::Time::now();
+  outCloud.header.stamp = rclcpp::Clock().now();
   outCloud.height = 1;
   outCloud.width = cloud.cols();
-  PointCloud2Modifier modifier(outCloud);
-  // modifier.setPointCloud2FieldsByString(2, "xyz", "rgb");
-  modifier.setPointCloud2Fields(5, "x", 1, sensor_msgs::PointField::FLOAT32, "y", 1, sensor_msgs::PointField::FLOAT32, "z", 1,
-                                sensor_msgs::PointField::FLOAT32, "rgb", 1, sensor_msgs::PointField::FLOAT32, "label", 1,
-                                sensor_msgs::PointField::FLOAT32);
 
-  PointCloud2Iterator<float> x_iter(outCloud, "x");
-  PointCloud2Iterator<float> y_iter(outCloud, "y");
-  PointCloud2Iterator<float> z_iter(outCloud, "z");
-  PointCloud2Iterator<uint8_t> r_iter(outCloud, "r");
-  PointCloud2Iterator<uint8_t> g_iter(outCloud, "g");
-  PointCloud2Iterator<uint8_t> b_iter(outCloud, "b");
-  PointCloud2Iterator<float> label_iter(outCloud, "label");
+  sensor_msgs::PointCloud2Modifier modifier(outCloud);
+  modifier.setPointCloud2Fields(5, "x", 1, sensor_msgs::msg::PointField::FLOAT32, "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "z", 1, sensor_msgs::msg::PointField::FLOAT32, "rgb", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "label", 1, sensor_msgs::msg::PointField::FLOAT32);
 
-  for (int i = 0; i < cloud.cols(); ++i, ++x_iter, ++y_iter, ++z_iter, ++r_iter, ++g_iter, ++b_iter, ++label_iter) {
+  sensor_msgs::PointCloud2Iterator<float> x_iter(outCloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> y_iter(outCloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> z_iter(outCloud, "z");
+  sensor_msgs::PointCloud2Iterator<float> label_iter(outCloud, "label");
+
+  for (int i = 0; i < cloud.cols(); ++i, ++x_iter, ++y_iter, ++z_iter, ++label_iter) {
     const Eigen::Vector4d& point = cloud.col(i);
     *x_iter = point(0);
     *y_iter = point(1);
     *z_iter = point(2);
-    *r_iter = uint8_t(point(3));
-    *g_iter = 255;
-    *b_iter = 255;
     *label_iter = point(3);
   }
   return outCloud;
@@ -143,6 +144,18 @@ void loadParameters(const std::string& file, MessageProcessorParameters* params)
   params->segmentationMaskTopic = node["segmentation_mask_topic"].as<std::string>();
 }
 
+// Parameter loading (YAML)
+void loadParameters(const std::string& file, MessageProcessorParameters* params) {
+  YAML::Node f = YAML::LoadFile(file);
+  if (f.IsNull()) {
+    throw std::runtime_error("Could not load MessageProcessorParameters!");
+  }
+  YAML::Node node = f["message_processor"];
+  params->matchedMessageTopic = node["matched_message_topic"].as<std::string>();
+  params->segmentationMaskTopic = node["segmentation_mask_topic"].as<std::string>();
+}
+
+// Parameter loading (YAML)
 void loadParameters(const std::string& file, ObjectFilterParameters* params) {
   YAML::Node f = YAML::LoadFile(file);
   if (f.IsNull()) {
@@ -165,6 +178,7 @@ void loadParameters(const std::string& file, ObjectFilterParameters* params) {
   params->segmentOnGroundRemovedCloud = node["segment_on_ground_removed_cloud"].as<bool>(false);
 }
 
+// Parameter loading (YAML)
 void loadParameters(const std::string& file, GeneralParameters* params) {
   YAML::Node f = YAML::LoadFile(file);
   if (f.IsNull()) {
@@ -180,6 +194,7 @@ void loadParameters(const std::string& file, GeneralParameters* params) {
   params->shouldUndistort = node["should_undistort"].as<bool>();
 }
 
+// Minimum distance to frame calculation 
 double minDistanceToFrame(const BoundingBox& box, const Eigen::Isometry3d& frame) {
   std::vector<Eigen::Vector3d> boxPoints = box.getAxisAlignedBoundingBox().GetBoxPoints();
   double minDistance = 1e6;
@@ -193,30 +208,48 @@ double minDistanceToFrame(const BoundingBox& box, const Eigen::Isometry3d& frame
   return minDistance;
 }
 
-visualization_msgs::Marker createMarker(const BoundingBox& box) {
-  visualization_msgs::Marker marker;
+// Create a Marker message for visualization
+visualization_msgs::msg::Marker createMarker(const BoundingBox& box) {
+  visualization_msgs::msg::Marker marker;
+  
+  // Set the marker header
   marker.header.frame_id = "map";
-  marker.header.stamp = ros::Time();
+  marker.header.stamp = rclcpp::Clock().now();
+  
+  // Set the marker namespace and ID
   marker.ns = box.trackUuid;
   marker.id = 0;
-  marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  marker.action = visualization_msgs::Marker::MODIFY;
+  
+  // Set marker type and action
+  marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
+  marker.action = visualization_msgs::msg::Marker::MODIFY;
+  
+  // Set marker position
   marker.pose.position.x = box.center.x();
   marker.pose.position.y = box.center.y();
   marker.pose.position.z = box.center.z() + box.extent.z() + 0.5;
+
+  // Set marker scale
   marker.scale.z = 0.2;
+
+  // Set marker color
   marker.color.a = 1.0;
   marker.color.r = 1.0;
   marker.color.g = 1.0;
   marker.color.b = 1.0;
-  marker.lifetime = ros::Duration(0.25);
+
+  // Set marker lifetime
+  marker.lifetime = rclcpp::Duration::from_seconds(0.25);
+
+  // Generate marker text
   std::stringstream ss;
   ss << idToLabel.at(box.label) << "\n vel.: " << box.velocity;
-
   marker.text = ss.str();
+
   return marker;
 }
 
+// Remove NaNs from an Eigen matrix
 Eigen::Matrix3Xd removeNans(const Eigen::Matrix3Xd& in) {
   Eigen::Matrix3Xd out;
   for (int i = 0; i < in.cols(); i++) {

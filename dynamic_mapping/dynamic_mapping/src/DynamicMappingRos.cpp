@@ -1,27 +1,28 @@
-#include "dynamic_mapping/DynamicMappingRos.h"
+#include "dynamic_mapping/dynamic_mapping_ros.h"
 #include <cv_bridge/cv_bridge.h>
-#include <dynamic_mapping_msgs/TrackArray.h>
-#include <jsk_recognition_msgs/BoundingBoxArray.h>
+#include <dynamic_mapping_msgs/msg/track_array.hpp>
+#include <jsk_recognition_msgs/msg/bounding_box_array.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <tf2_eigen/tf2_eigen.h>
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/msg/marker_array.hpp>
 
 size_t Detection::id_ = 0;
-DynamicMappingRos::DynamicMappingRos(ros::NodeHandle& nh, const GeneralParameters& generalParameters,
+
+DynamicMappingRos::DynamicMappingRos(const GeneralParameters& generalParameters,
                                      const ObjectFilterParameters& objectFilterParameters)
-    : verbose_(generalParameters.verbose) {
-  listener_ = std::make_unique<tf2_ros::TransformListener>(tfBuffer_);
+    : Node("dynamic_mapping_ros"), verbose_(generalParameters.verbose) {
+  listener_ = std::make_unique<tf2_ros::TransformListener>(tfBuffer_, this);
   if (verbose_) {
-    pub_ = nh.advertise<sensor_msgs::PointCloud2>(generalParameters.clusterTopic, 1);
-    bboxPub_ = nh.advertise<jsk_recognition_msgs::BoundingBoxArray>(generalParameters.detectionTopic, 1);
-    trackBoxesPub_ = nh.advertise<jsk_recognition_msgs::BoundingBoxArray>(generalParameters.trackTopic, 1);
+    pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(generalParameters.clusterTopic, 1);
+    bboxPub_ = this->create_publisher<jsk_recognition_msgs::msg::BoundingBoxArray>(generalParameters.detectionTopic, 1);
+    trackBoxesPub_ = this->create_publisher<jsk_recognition_msgs::msg::BoundingBoxArray>(generalParameters.trackTopic, 1);
   }
-  cloudPubStatic_ = nh.advertise<sensor_msgs::PointCloud2>(generalParameters.outputTopic + "/static", 1);
-  cloudPubDynamic_ = nh.advertise<sensor_msgs::PointCloud2>(generalParameters.outputTopic + "/dynamic", 1);
-  trackPub_ = nh.advertise<dynamic_mapping_msgs::TrackArray>("/tracks", 1);
-  markerPub_ = nh.advertise<visualization_msgs::MarkerArray>("/markers", 1);
+  cloudPubStatic_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(generalParameters.outputTopic + "/static", 1);
+  cloudPubDynamic_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(generalParameters.outputTopic + "/dynamic", 1);
+  trackPub_ = this->create_publisher<dynamic_mapping_msgs::msg::TrackArray>("/tracks", 1);
+  markerPub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/markers", 1);
 
   // clang-format off
   cameraIntrinsics_ = (cv::Mat_<double>(3, 3) <<   767.239452,        0.0, 814.414996,
@@ -37,10 +38,13 @@ DynamicMappingRos::DynamicMappingRos(ros::NodeHandle& nh, const GeneralParameter
 
   filter_ = std::make_unique<MovingObjectsFilter>(objectFilterParameters);
   filter_->updateCameraProjection(cameraProjection_);
-  cameraInfoSubscriber_ = nh.subscribe(generalParameters.cameraInfoTopic, 1, &DynamicMappingRos::cameraInfoCallback, this);
+  cameraInfoSubscriber_ = this->create_subscription<sensor_msgs::msg::CameraInfo>(
+      generalParameters.cameraInfoTopic, 1, std::bind(&DynamicMappingRos::cameraInfoCallback, this, std::placeholders::_1));
 }
 
-void DynamicMappingRos::callback(sensor_msgs::PointCloud2 raw, sensor_msgs::PointCloud2 noGnd, sensor_msgs::CompressedImage cam) {
+void DynamicMappingRos::callback(const sensor_msgs::msg::PointCloud2::SharedPtr raw,
+                                 const sensor_msgs::msg::PointCloud2::SharedPtr noGnd,
+                                 const sensor_msgs::msg::CompressedImage::SharedPtr cam) {
   auto start = std::chrono::high_resolution_clock::now();
   {
     std::lock_guard<std::mutex> guard{camInfoLock_};
@@ -53,73 +57,93 @@ void DynamicMappingRos::callback(sensor_msgs::PointCloud2 raw, sensor_msgs::Poin
     }
   }
 
-  geometry_msgs::TransformStamped lidarToWorld, worldToCamera, worldToLidar, shovelFrame;
+  geometry_msgs::msg::TransformStamped lidarToWorld, worldToCamera, worldToLidar, shovelFrame;
   try {
-    lidarToWorld = tfBuffer_.lookupTransform("map", "os_sensor", ros::Time(0));
-    worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", ros::Time(0));
-    worldToLidar = tfBuffer_.lookupTransform("os_sensor", "map", ros::Time(0));
-    shovelFrame = tfBuffer_.lookupTransform("map", "SHOVEL", ros::Time(0));
+    lidarToWorld = tfBuffer_.lookupTransform("map", "os_sensor", tf2::TimePointZero);
+    worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", tf2::TimePointZero);
+    worldToLidar = tfBuffer_.lookupTransform("os_sensor", "map", tf2::TimePointZero);
+    shovelFrame = tfBuffer_.lookupTransform("map", "SHOVEL", tf2::TimePointZero);
   } catch (tf2::LookupException& e) {
-    ROS_ERROR("%s", e.what());
+    RCLCPP_ERROR(this->get_logger(), "%s", e.what());
     return;
   }
-  sensor_msgs::PointCloud2 rawWorld, noGndWorld;
+
+  // Rest of the callback implementation
+
+  sensor_msgs::msg::PointCloud2 rawWorld, noGndWorld;
   tf2::doTransform(raw, rawWorld, lidarToWorld);
   tf2::doTransform(noGnd, noGndWorld, lidarToWorld);
+
   Eigen::Matrix3Xd fullCloud = rosToEigen(rawWorld);
   Eigen::Matrix3Xd noGroundCloud = rosToEigen(noGndWorld);
 
   filter_->setCameraTransform(tf2::transformToEigen(worldToCamera));
-  filter_->filterObjects(fullCloud, noGroundCloud, ros::Time::now().toSec());
+  filter_->filterObjects(fullCloud, noGroundCloud, node_->now().seconds());
   filter_->setShovelFrame(tf2::transformToEigen(shovelFrame));
-  sensor_msgs::PointCloud2 outputStaticSensorFrame;
-  sensor_msgs::PointCloud2 outputDynamicSensorFrame;
+
+  sensor_msgs::msg::PointCloud2 outputStaticSensorFrame;
+  sensor_msgs::msg::PointCloud2 outputDynamicSensorFrame;
+
   tf2::doTransform(eigenToRos(filter_->getFilteredCloudStatic(), "map"), outputStaticSensorFrame, worldToLidar);
   tf2::doTransform(eigenToRos(filter_->getFilteredCloudDynamic(), "map"), outputDynamicSensorFrame, worldToLidar);
-  cloudPubStatic_.publish(outputStaticSensorFrame);
-  cloudPubDynamic_.publish(outputDynamicSensorFrame);
 
-  dynamic_mapping_msgs::TrackArray tracks;
+  cloudPubStatic_->publish(outputStaticSensorFrame);
+  cloudPubDynamic_->publish(outputDynamicSensorFrame);
+  dynamic_mapping_msgs::msg::TrackArray tracks;
   tracks.tracks = generateTrackMsgs();
   tracks.header.frame_id = "map";
   tracks.header.stamp = raw.header.stamp;
 
   if (!tracks.tracks.empty()) {
-    trackPub_.publish(tracks);
+    trackPub_->publish(tracks);
   }
 
   if (verbose_) {
     debugOutput();
   }
+
   auto duration = std::chrono::high_resolution_clock::now() - start;
-  ROS_INFO_STREAM("Pipeline took:" << std::chrono::duration_cast<std::chrono::milliseconds>(duration).count() << "ms");
+  RCLCPP_INFO(this->get_logger(), "Pipeline took: %ld ms", std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
+
 }
 
-Eigen::Matrix3Xd DynamicMappingRos::rosToEigen(const sensor_msgs::PointCloud2& ros) {
+Eigen::Matrix3Xd DynamicMappingRos::rosToEigen(const sensor_msgs::msg::PointCloud2& ros) {
   pcl::PointCloud<pcl::PointXYZ> pclCloud;
   pcl::fromROSMsg(ros, pclCloud);
+
+  // pcl::PointCloud's getMatrixXfMap() function returns a map of the data.
   return pclCloud.getMatrixXfMap().cast<double>();
 }
 
 void DynamicMappingRos::debugOutput() {
-  jsk_recognition_msgs::BoundingBoxArray bboxArr;
-  std::vector<jsk_recognition_msgs::BoundingBox> trackBoxes;
-  std::vector<jsk_recognition_msgs::BoundingBox> detectionBoxes;
-  visualization_msgs::MarkerArray markerArray;
+  jsk_recognition_msgs::msg::BoundingBoxArray bboxArr;
+  std::vector<jsk_recognition_msgs::msg::BoundingBox> trackBoxes;
+  std::vector<jsk_recognition_msgs::msg::BoundingBox> detectionBoxes;
+  visualization_msgs::msg::MarkerArray markerArray;
+
+  // Process detection boxes
   for (const auto& box : filter_->getDetectionBoxes()) {
     detectionBoxes.push_back(generateBoundingBoxMsg(box));
   }
+
+  // Process track boxes
   for (const auto& box : filter_->getTrackBoxes()) {
     trackBoxes.push_back(generateBoundingBoxMsg(box));
     markerArray.markers.push_back(createMarker(box));
   }
+
+  // Publish detection boxes
   bboxArr.header.frame_id = "map";
+  bboxArr.header.stamp = node_->now();
   bboxArr.boxes = detectionBoxes;
-  bboxPub_.publish(bboxArr);
-  bboxArr.header.frame_id = "map";
+  bboxPub_->publish(bboxArr);
+
+  // Publish track boxes
   bboxArr.boxes = trackBoxes;
-  trackBoxesPub_.publish(bboxArr);
-  markerPub_.publish(markerArray);
+  trackBoxesPub_->publish(bboxArr);
+
+  // Publish markers
+  markerPub_->publish(markerArray);
 }
 
 cv::Mat DynamicMappingRos::undistortMask(const cv::Mat& image) {
@@ -131,15 +155,15 @@ cv::Mat DynamicMappingRos::undistortMask(const cv::Mat& image) {
   return undistorted;
 }
 
-void DynamicMappingRos::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstPtr& camInfo) {
+void DynamicMappingRos::cameraInfoCallback(const sensor_msgs::msg::CameraInfo::SharedPtr camInfo) {
   {
     std::lock_guard<std::mutex> lock{camInfoLock_};
-    if (!((camInfo->D == camInfo_.D) && (camInfo->K == camInfo_.K) && (camInfo->P == camInfo_.P))) {
+    if (!((camInfo->d == camInfo_.d) && (camInfo->k == camInfo_.k) && (camInfo->p == camInfo_.p))) {
       imageHeight_ = camInfo->height;
       imageWidth_ = camInfo->width;
-      auto distCoeffs = camInfo->D;
-      auto intrinsics = camInfo->K;
-      auto projection = camInfo->P;
+      auto distCoeffs = camInfo->d;
+      auto intrinsics = camInfo->k;
+      auto projection = camInfo->p;
 
       auto newIntrinsics = cv::Mat(3, 3, CV_64F, intrinsics.data());
       auto newProjection = Eigen::Map<Eigen::Matrix<double, 3, 4, Eigen::RowMajor>>(projection.data());
@@ -160,25 +184,30 @@ void DynamicMappingRos::cameraInfoCallback(const sensor_msgs::CameraInfo::ConstP
     }
   }
 }
-void DynamicMappingRos::maskCallback(const sensor_msgs::PointCloud2& noGnd, const sensor_msgs::Image& mask) {
-  geometry_msgs::TransformStamped lidarToWorld, worldToCamera;
+
+void DynamicMappingRos::maskCallback(const sensor_msgs::msg::PointCloud2& noGnd, const sensor_msgs::msg::Image& mask) {
+  geometry_msgs::msg::TransformStamped lidarToWorld, worldToCamera;
+
   try {
-    lidarToWorld = tfBuffer_.lookupTransform("map", "os_sensor", ros::Time(0));
-    worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", ros::Time(0));
-  } catch (tf2::LookupException& e) {
-    ROS_ERROR("%s", e.what());
+    // Retrieve transforms
+    lidarToWorld = tfBuffer_.lookupTransform("map", "os_sensor", tf2::TimePointZero);
+    worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", tf2::TimePointZero);
+  } catch (const tf2::TransformException& e) {
+    RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
     return;
   }
-  sensor_msgs::PointCloud2 noGndWorld;
+
+  // Transform the input point cloud to world frame
+  sensor_msgs::msg::PointCloud2 noGndWorld;
   tf2::doTransform(noGnd, noGndWorld, lidarToWorld);
   Eigen::Matrix3Xd noGroundCloud = rosToEigen(noGndWorld);
 
-  // do the copying ROS <-> OpenCV ourselves because cv_bridge does weird stuff to the mask
+  // Convert the ROS Image message to OpenCV format
   cv::Mat image;
   cv::Mat(mask.height, mask.width, CV_8UC3, const_cast<uchar*>(&mask.data[0]), mask.step).copyTo(image);
 
   if (mask.encoding == "rgb8") {
-    // manually swap red and blue channels, we are expecting bgr8 image
+    // Manually swap red and blue channels for BGR conversion
     cv::Mat rgb[3], tmp;
     cv::split(image, rgb);
     tmp = rgb[0];
@@ -187,39 +216,54 @@ void DynamicMappingRos::maskCallback(const sensor_msgs::PointCloud2& noGnd, cons
     cv::merge(rgb, 3, image);
   }
 
+  // Optionally undistort the mask
   cv::Mat segmentationMask = shouldUndistort_ ? undistortMask(image) : image;
+
+  // Update the filter with the camera transform and segmentation mask
   filter_->setCameraTransform(tf2::transformToEigen(worldToCamera));
-  filter_->updateLabels(noGroundCloud, segmentationMask, noGnd.header.stamp.toSec());
+  filter_->updateLabels(noGroundCloud, segmentationMask, rclcpp::Time(noGnd.header.stamp).seconds());
+
+  // Publish labeled clusters if verbose mode is enabled
   if (verbose_) {
-    pub_.publish(generateClusterPointCloud(filter_->getLabelledClusters()));
+    pub_->publish(generateClusterPointCloud(filter_->getLabelledClusters()));
   }
 }
 
-std::vector<dynamic_mapping_msgs::Track> DynamicMappingRos::generateTrackMsgs() {
-  std::vector<dynamic_mapping_msgs::Track> tracks;
+
+std::vector<dynamic_mapping_msgs::msg::Track> DynamicMappingRos::generateTrackMsgs() {
+  std::vector<dynamic_mapping_msgs::msg::Track> tracks;
   auto filterTracks = filter_->getTracks();
+
   for (const auto& track : filterTracks) {
     if (track.getLabel() < 0) continue;
-    dynamic_mapping_msgs::Track trackMsg;
+
+    dynamic_mapping_msgs::msg::Track trackMsg;
     auto trackState = track.getState();
 
+    // Set position
     trackMsg.pose.position.x = trackState.state[0];
     trackMsg.pose.position.y = trackState.state[2];
     trackMsg.pose.position.z = trackState.state[4];
 
-    trackMsg.pose.orientation.w = 1;
+    // Set orientation (default to identity quaternion)
+    trackMsg.pose.orientation.w = 1.0;
 
+    // Set velocity
     trackMsg.velocity.linear.x = trackState.state[1];
     trackMsg.velocity.linear.y = trackState.state[3];
     trackMsg.velocity.linear.z = trackState.state[5];
 
+    // Set dimensions
     trackMsg.dimensions.x = trackState.state[6];
     trackMsg.dimensions.y = trackState.state[7];
     trackMsg.dimensions.z = trackState.state[8];
 
+    // Set label and UUID
     trackMsg.label = track.getLabel();
     trackMsg.uuid = track.getUuid();
+
     tracks.push_back(trackMsg);
   }
+
   return tracks;
 }

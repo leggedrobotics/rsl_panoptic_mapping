@@ -1,5 +1,0 @@
-<library path="lib/libdynamic_mapping">
-    <class name="dynamic_mapping_nodelet" type="DynamicMappingNodelet" base_class_type="nodelet::Nodelet">
-        <description>Dynamic Mapping Nodelet</description>
-    </class>
-</library>
