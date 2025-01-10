@@ -97,14 +97,18 @@ void medianFiltering(grid_map::GridMap *mapPtr, double estimationRadius, int dow
 
 } // namespace
 
-ElevationMapGroundPlaneRemover::ElevationMapGroundPlaneRemover(std::shared_ptr<rclcpp::Node> node, const rclcpp::Logger & node_logger) :
-        node_(node), param_(node_logger) {
+ElevationMapGroundPlaneRemover::ElevationMapGroundPlaneRemover(std::shared_ptr<rclcpp::Node> node) :
+	node_(node), param_(node->get_logger()), pclToGridMap_(node->get_logger()) {
 }
+
+//ElevationMapGroundPlaneRemover::ElevationMapGroundPlaneRemover(std::shared_ptr<rclcpp::Node> node) :
+//	node_(node) {
+//}
 
 void ElevationMapGroundPlaneRemover::setParameters(const GroundPlaneRemoverParam &p) {
 	auto param = static_cast<const ElevationMapGroundPlaneRemoverParam*>(&p);
 	param_ = *param;
-	pclToGridMap_.setParameters(param_.pclConverter_.get());
+	pclToGridMap_.loadParameters(param_.pclConverter_.get());
 }
 const ElevationMapGroundPlaneRemoverParam& ElevationMapGroundPlaneRemover::getParameters() const {
 	return param_;

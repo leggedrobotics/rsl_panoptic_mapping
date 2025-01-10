@@ -19,7 +19,7 @@ namespace ground_removal{
 class ElevationMapGroundPlaneRemover : public GroundPlaneRemover {
 public:
 	ElevationMapGroundPlaneRemover() = default;
-    explicit ElevationMapGroundPlaneRemover(rclcpp::Node::SharedPtr nh, const rclcpp::Logger & node_logger);
+    explicit ElevationMapGroundPlaneRemover(rclcpp::Node::SharedPtr nh);//, const rclcpp::Logger & node_logger);
 	virtual ~ElevationMapGroundPlaneRemover() = default;
 
 	 void removeGroundPlane() override;
@@ -31,10 +31,11 @@ private:
 
      void snapToMapLimits(const grid_map::GridMap &map, double *x, double *y) const;
 
+     rclcpp::Node::SharedPtr node_ = nullptr;
 	 ElevationMapGroundPlaneRemoverParam param_;
 	 grid_map::GridMapPclLoader pclToGridMap_;
 	 grid_map::GridMap elevationMap_;
-    rclcpp::Node::SharedPtr node_ = nullptr;
+    
 
 };
 

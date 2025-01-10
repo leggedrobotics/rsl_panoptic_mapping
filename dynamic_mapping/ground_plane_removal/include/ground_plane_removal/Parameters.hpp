@@ -40,7 +40,7 @@ struct ElevationMapGroundPlaneRemoverParam : public GroundPlaneRemoverParam {
 
   // Constructor
   ElevationMapGroundPlaneRemoverParam(
-	const rclcpp::Logger& node_logger,
+  	const rclcpp::Logger& node_logger,
     double minHeightAboveGround = 0.1,
     double maxHeightAboveGround = 8.0,
     double medianFilteringRadius = 2.0,
@@ -52,7 +52,6 @@ struct ElevationMapGroundPlaneRemoverParam : public GroundPlaneRemoverParam {
       medianFilteringRadius_(medianFilteringRadius),
       medianFilterDownsampleFactor_(medianFilterDownsampleFactor),
       isUseMedianFiltering_(isUseMedianFiltering) {}
-};
  
 };
 
