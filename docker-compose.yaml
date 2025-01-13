@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  dynamic_mapping:
+    image: dynamic_mapping
+    build: .
+    runtime: nvidia
+    environment:
+      - HOST_USERNAME=${HOST_USERNAME:-jonas}  # Default to 'default_user' if not set
+      - HOST_UID=${HOST_UID:-1000}  # Default to '1000' if not set
+      - HOST_GID=${HOST_GID:-1000}  # Default to '1000' if not set
+      - NVIDIA_VISIBLE_DEVICES=all  # Use all GPUs
+      - DISPLAY=${DISPLAY}             # Pass the host's DISPLAY variable
+      - QT_X11_NO_MITSHM=1             # Fix for some X11 issues with shared memory
+    volumes:
+      - ./dynamic_mapping:/workspace/ros2_ws/src/dynamic_mapping
+      - /tmp/.X11-unix:/tmp/.X11-unix  # Mount the X11 socket
+    stdin_open: true
+    tty: true
+    command: /bin/bash  # Optionally run bash interactively

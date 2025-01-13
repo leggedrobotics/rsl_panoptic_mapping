@@ -7,12 +7,14 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 # Find required dependencies
 find_package(ament_cmake REQUIRED)
+find_package(grid_map_pcl REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(PCL 1.10 REQUIRED)
+find_package(grid_map_core REQUIRED)
 find_package(ground_plane_removal REQUIRED)
-find_package(tree_detection_ros REQUIRED)
+#find_package(tree_detection_ros REQUIRED)
 
 # Include directories
 include_directories(
@@ -44,7 +46,9 @@ target_link_libraries(${PROJECT_NAME}_node
     ${PROJECT_NAME}
     ${PCL_COMMON_LIBRARIES}
     ${PCL_IO_LIBRARIES}
+    
 )
+
 
 # Link dependencies to the library
 ament_target_dependencies(${PROJECT_NAME}
@@ -52,7 +56,8 @@ ament_target_dependencies(${PROJECT_NAME}
     sensor_msgs
     pcl_conversions
     ground_plane_removal
-    tree_detection_ros
+    grid_map_pcl
+    #tree_detection_ros
 )
 
 ament_target_dependencies(${PROJECT_NAME}_node
@@ -60,7 +65,8 @@ ament_target_dependencies(${PROJECT_NAME}_node
     sensor_msgs
     pcl_conversions
     ground_plane_removal
-    tree_detection_ros
+    grid_map_pcl
+    #tree_detection_ros
 )
 
 # Install the library

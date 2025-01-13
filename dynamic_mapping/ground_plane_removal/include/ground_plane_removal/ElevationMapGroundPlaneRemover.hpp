@@ -18,7 +18,7 @@ namespace ground_removal{
 
 class ElevationMapGroundPlaneRemover : public GroundPlaneRemover {
 public:
-	ElevationMapGroundPlaneRemover() = default;
+	//ElevationMapGroundPlaneRemover() = default;
     explicit ElevationMapGroundPlaneRemover(rclcpp::Node::SharedPtr nh);//, const rclcpp::Logger & node_logger);
 	virtual ~ElevationMapGroundPlaneRemover() = default;
 
@@ -26,6 +26,8 @@ public:
      void setParameters(const GroundPlaneRemoverParam &p);
      const ElevationMapGroundPlaneRemoverParam &getParameters() const;
      const grid_map::GridMap &getElevationMap() const;
+     void setFilterCloudPtr(PointCloud::ConstPtr filterCloud);
+     void setFilterCloud(const PointCloud& filterCloud);
 
 private:
 
@@ -35,7 +37,7 @@ private:
 	 ElevationMapGroundPlaneRemoverParam param_;
 	 grid_map::GridMapPclLoader pclToGridMap_;
 	 grid_map::GridMap elevationMap_;
-    
+     PointCloud::Ptr filterCloud_;
 
 };
 

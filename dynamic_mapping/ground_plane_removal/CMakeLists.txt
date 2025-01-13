@@ -48,6 +48,7 @@ include_directories(
   SYSTEM
     ${PCL_INCLUDE_DIRS}
     ${OpenMP_CXX_INCLUDE_DIRS}
+    
 )
 
 link_directories( # only needed for PCL
@@ -114,6 +115,8 @@ install(DIRECTORY include/
 #ament_export_dependencies(yaml-cpp)
 #ament_export_interfaces(${PROJECT_NAME})
 #ament_export_libraries(${PROJECT_NAME})
-
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_dependencies(${dependencies})
 # Finally...
 ament_package()

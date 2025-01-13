@@ -16,10 +16,10 @@ int main(int argc, char** argv) {
 
   // Create the GroundRemoverRos instance
   auto groundRemover = std::make_shared<ground_remover::GroundRemoverRos>(
-      "ground_remover_node", input_topic, output_topic, configFilePath, leaf_size);
+      node, input_topic, output_topic, configFilePath, leaf_size);
 
   // Spin the node
-  rclcpp::spin(groundRemover);
+  rclcpp::spin(node);
 
   // Shutdown ROS2
   rclcpp::shutdown();

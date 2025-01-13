@@ -108,7 +108,7 @@ ElevationMapGroundPlaneRemover::ElevationMapGroundPlaneRemover(std::shared_ptr<r
 void ElevationMapGroundPlaneRemover::setParameters(const GroundPlaneRemoverParam &p) {
 	auto param = static_cast<const ElevationMapGroundPlaneRemoverParam*>(&p);
 	param_ = *param;
-	pclToGridMap_.loadParameters(param_.pclConverter_.get());
+	pclToGridMap_.setParameters(param_.pclConverter_.get());
 }
 const ElevationMapGroundPlaneRemoverParam& ElevationMapGroundPlaneRemover::getParameters() const {
 	return param_;
@@ -130,30 +130,35 @@ void ElevationMapGroundPlaneRemover::removeGroundPlane() {
 
 	elevationMap_ = gridMap;
 	noGroundPlaneCloud_.reset(new PointCloud);
-	noGroundPlaneCloud_->points.reserve(inputCloud_->size());
+	noGroundPlaneCloud_->points.reserve(filterCloud_->size());
 //	const auto &data = gridMap.get(elevationLayer);
-	for (int i = 0; i < inputCloud_->size(); ++i) {
-		double x = inputCloud_->points[i].x;
-		double y = inputCloud_->points[i].y;
+	int numPts = 0;
+	for (size_t i = 0; i < filterCloud_->size(); ++i) {
+		double x = filterCloud_->points[i].x;
+		double y = filterCloud_->points[i].y;
 		snapToMapLimits(gridMap, &x, &y);
-		const double z = inputCloud_->points[i].z;
+		const double z = filterCloud_->points[i].z;
 		const double h = gridMap.atPosition(elevationLayer, grid_map::Position(x, y));
 		const bool isSkip = (z < h + param_.minHeightAboveGround_) || ( z > h + param_.maxHeightAboveGround_ );
 		if (isSkip) {
 			continue;
 		}
-		noGroundPlaneCloud_->points.push_back(inputCloud_->points[i]);
+		noGroundPlaneCloud_->points.push_back(filterCloud_->points[i]);
+		numPts++;
 	}
+	noGroundPlaneCloud_->points.resize(numPts);
 	noGroundPlaneCloud_->width = noGroundPlaneCloud_->points.size();
 	noGroundPlaneCloud_->height = 1;
 	noGroundPlaneCloud_->is_dense = true;
 
 	if (node_ != nullptr) {
-		gridMapPub = node_->advertise<grid_map_msgs::GridMap>("elevation_map", 1, true);
-		grid_map_msgs::msg::GridMap msg;
-		grid_map::GridMapRosConverter::toMessage(gridMap, msg);
-		msg.info.header.frame_id = inputCloud_->header.frame_id;
-		 gridMapPub->publish(msg);
+        auto gridMapPub = node_->create_publisher<grid_map_msgs::msg::GridMap>("elevation_map", 1);
+		std::unique_ptr<grid_map_msgs::msg::GridMap> msgPtr = grid_map::GridMapRosConverter::toMessage(gridMap);
+		
+        if (msgPtr) {
+            msgPtr->header.frame_id = inputCloud_->header.frame_id;
+            gridMapPub->publish(std::move(msgPtr));
+        }
 	}
 }
 
@@ -170,4 +175,14 @@ void ElevationMapGroundPlaneRemover::snapToMapLimits(const grid_map::GridMap &gm
 	*y = (snapped.y() - p0.y()) * hackingFactor + p0.y();
 }
 
+void ElevationMapGroundPlaneRemover::setFilterCloudPtr(PointCloud::ConstPtr filterCloud) {
+  setFilterCloud(*filterCloud);
+}
+
+void ElevationMapGroundPlaneRemover::setFilterCloud(const PointCloud& filterCloud) {
+  filterCloud_.reset(new PointCloud);
+  *filterCloud_ = filterCloud;
+}
+
 }  // namespace ground_removal
+

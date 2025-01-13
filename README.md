@@ -49,3 +49,7 @@ Ensure ROS is installed. This package depends on several external ROS packages a
     ```bash
     roslaunch panoptic_gridmap semantic_map.launch
     ```
+
+## DOcker
+docker build -t dynamic_mapping -f Dockerfile .
+docker-compose run -e HOST_USERNAME=$(whoami) --service-ports  dynamic_mapping
