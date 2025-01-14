@@ -1,11 +1,8 @@
 [submodule "panoptic_segmentation"]
 	path = panoptic_segmentation
 	url = git@github.com:leggedrobotics/rsl_panoptic.git
-[submodule "/home/jonas/Coding/boulder_perception/rsl_panoptic_mapping/dynamic_mapping/grid_map"]
-	path = /home/jonas/Coding/boulder_perception/rsl_panoptic_mapping/dynamic_mapping/grid_map
-	url = git@github.com:ANYbotics/grid_map.git
-	branch = ros2
+
 [submodule "dynamic_mapping/grid_map"]
 	path = dynamic_mapping/grid_map
-	url = git@github.com:ANYbotics/grid_map.git
+	url = git@github.com:JonasGrutter/gird_map.git
 	branch = ros2
