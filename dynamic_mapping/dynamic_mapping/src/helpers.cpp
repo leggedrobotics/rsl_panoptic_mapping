@@ -1,5 +1,6 @@
 #include "dynamic_mapping/helpers.h"
-#include <sensor_msgs/point_cloud2_iterator.h>
+#include <sensor_msgs/point_cloud2_iterator.hpp>
+#include <rclcpp/rclcpp.hpp>
 
 // Convert Eigen points to Open3D PointCloud
 open3d::geometry::PointCloud eigenToOpen3d(const Eigen::Matrix3Xd& pts) {
@@ -133,16 +134,47 @@ sensor_msgs::msg::PointCloud2 eigenToRos(const Eigen::Matrix4Xd& cloud, const st
   return outCloud;
 }
 
-void loadParameters(const std::string& file, MessageProcessorParameters* params) {
-  YAML::Node f = YAML::LoadFile(file);
-  if (f.IsNull()) {
-    throw std::runtime_error("Could not load MessageProcessorParameters!");
+sensor_msgs::msg::PointCloud2 eigenToRosXYZ(const Eigen::Matrix3Xd& cloud,
+                                            const std::string& frame_id)
+{
+  // Prepare an empty PointCloud2
+  sensor_msgs::msg::PointCloud2 outCloud;
+  outCloud.header.frame_id = frame_id;
+  outCloud.header.stamp = rclcpp::Clock().now();
+  outCloud.height = 1;                // unorganized point cloud
+  outCloud.width = cloud.cols();      // number of points is #cols
+  outCloud.is_bigendian = false;      // standard
+  outCloud.is_dense = false;         // or true if no invalid points
+  
+  // We only have x,y,z - 3 fields total
+  sensor_msgs::PointCloud2Modifier modifier(outCloud);
+  modifier.setPointCloud2Fields(3,
+                                "x", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "y", 1, sensor_msgs::msg::PointField::FLOAT32,
+                                "z", 1, sensor_msgs::msg::PointField::FLOAT32);
+  
+  // Optionally setPointCloud2FieldsByString("xyz") could also be used:
+  // modifier.setPointCloud2FieldsByString(1, "xyz");
+  
+  // We now have iterators for x, y, z
+  sensor_msgs::PointCloud2Iterator<float> x_iter(outCloud, "x");
+  sensor_msgs::PointCloud2Iterator<float> y_iter(outCloud, "y");
+  sensor_msgs::PointCloud2Iterator<float> z_iter(outCloud, "z");
+  
+  // Fill the cloud
+  for (int i = 0; i < cloud.cols(); ++i, ++x_iter, ++y_iter, ++z_iter) {
+    // Each column i is an Eigen::Vector3d: (x, y, z)
+    const Eigen::Vector3d& point = cloud.col(i);
+    *x_iter = static_cast<float>(point.x());
+    *y_iter = static_cast<float>(point.y());
+    *z_iter = static_cast<float>(point.z());
   }
-
-  YAML::Node node = f["message_processor"];
-  params->matchedMessageTopic = node["matched_message_topic"].as<std::string>();
-  params->segmentationMaskTopic = node["segmentation_mask_topic"].as<std::string>();
+  
+  return outCloud;
 }
+
+
+
 
 // Parameter loading (YAML)
 void loadParameters(const std::string& file, MessageProcessorParameters* params) {

@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="3">
-  <name>dynamic_mapping_msgs_ros2</name>
+  <name>jsk_recognition_msgs</name>
   <version>0.0.0</version>
   <description>Contains messages needed for dynamic mapping</description>
   <maintainer email="peyschen@student.ethz.ch">Pol Eyschen</maintainer>

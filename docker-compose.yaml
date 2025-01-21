@@ -6,15 +6,43 @@ services:
     build: .
     runtime: nvidia
     environment:
-      - HOST_USERNAME=${HOST_USERNAME:-jonas}  # Default to 'default_user' if not set
-      - HOST_UID=${HOST_UID:-1000}  # Default to '1000' if not set
-      - HOST_GID=${HOST_GID:-1000}  # Default to '1000' if not set
-      - NVIDIA_VISIBLE_DEVICES=all  # Use all GPUs
-      - DISPLAY=${DISPLAY}             # Pass the host's DISPLAY variable
-      - QT_X11_NO_MITSHM=1             # Fix for some X11 issues with shared memory
+      HOST_USERNAME: jonas  # Default to 'default_user' if not set
+      #HOST_UID: -1000 # Default to '1000' if not set
+      #HOST_GID: -1000 # Default to '1000' if not set
+      NVIDIA_VISIBLE_DEVICES: all  # Use all GPUs
+      NVIDIA_DRIVER_CAPABILITIES: all
+      DISPLAY: ${DISPLAY}             # Pass the host's DISPLAY variable
+      QT_X11_NO_MITSHM: 1             # Fix for some X11 issues with shared memory
+      XAUTHORITY: /tmp/.docker.xauth
+      SSH_AUTH_SOCKET: /ssh-agent
+      LIBGL_ALWAYS_INDIRECT: 1
     volumes:
       - ./dynamic_mapping:/workspace/ros2_ws/src/dynamic_mapping
-      - /tmp/.X11-unix:/tmp/.X11-unix  # Mount the X11 socket
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /tmp/.docker.xauth:/tmp/.docker.xauth:rw
+      - ${SSH_AUTH_SOCK}:/ssh-agent
+      - /lib/modules:/lib/modules
+      - /etc/localtime:/etc/localtime:ro
+      - /dev/input:/dev/input
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/shadow:/etc/shadow:ro
+      - /etc/group:/etc/group:ro
+      - /dev/dri:/dev/dri
+    devices:
+      - /dev/dri:/dev/dri
     stdin_open: true
+    privileged: true
     tty: true
     command: /bin/bash  # Optionally run bash interactively
+    network_mode: host
+    ipc: host
+    shm_size: '2gb'
+    cap_add:
+      - ALL
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

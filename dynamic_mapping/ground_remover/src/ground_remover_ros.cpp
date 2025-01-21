@@ -7,10 +7,14 @@ using namespace ground_remover;
 GroundRemoverRos::GroundRemoverRos(rclcpp::Node::SharedPtr node, const std::string& inputTopic, const std::string& outputTopic,
                                    const std::string& configFilePath, float leaf_size)
     : node_(node) {
+    
   cloudSubscriber_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
-  inputTopic, 1, std::bind(&GroundRemoverRos::cloudCallback, this, std::placeholders::_1));
+    inputTopic, 1, std::bind(&GroundRemoverRos::cloudCallback, this, std::placeholders::_1));
+  
   noGroundCloudPublisher_ = node_->create_publisher<sensor_msgs::msg::PointCloud2>(outputTopic, 1);
+  
   groundRemover_ = std::make_unique<ElevationMapGroundRemover>(configFilePath, leaf_size, node);
+  std::cout << "GroundRemoverRos constructor" << std::endl;
 }
 
 void GroundRemoverRos::cloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr pc) {

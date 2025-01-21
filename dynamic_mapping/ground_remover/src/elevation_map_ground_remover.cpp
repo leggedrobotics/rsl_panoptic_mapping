@@ -10,7 +10,7 @@ using namespace ground_remover;
 ElevationMapGroundRemover::ElevationMapGroundRemover(const std::string& configFilePath, const float leaf_size, rclcpp::Node::SharedPtr node) {
   _groundRemover = std::make_shared<ground_removal::ElevationMapGroundPlaneRemover>(node);
   ground_removal::ElevationMapGroundPlaneRemoverParam groundRemovalParams(node->get_logger()); // have to give node logger in there
-  //ground_removal::loadParameters(configFilePath, &groundRemovalParams);
+  ground_removal::loadParameters(configFilePath, &groundRemovalParams, node->get_logger());
   _groundRemover->setParameters(groundRemovalParams);
   _leaf_size = leaf_size;
 }
@@ -18,16 +18,24 @@ ElevationMapGroundRemover::ElevationMapGroundRemover(const std::string& configFi
 void ElevationMapGroundRemover::removeGround(PointCloud& in, PointCloud& out) {
   pcl::Indices indices;
   in.is_dense = false;
+  //std::cout << "Input cloud size: " << in.size() << std::endl;
+  //std::cout << "Output cloud size: " << out.size() << std::endl;
+
   pcl::removeNaNFromPointCloud(in, out, indices);
+  //std::cout << "Input cloud size without nan: " << in.size() << std::endl;
+  //std::cout << "Output cloud size: " << out.size() << std::endl;
+
   removeRangeGreaterThan(out, out, 50.f);
+  //std::cout << "Output cloud size after removing range greater than 50: " << out.size() << std::endl;
   const PointCloud::Ptr voxelCloud(new PointCloud);
   voxelizeCloud(out, *voxelCloud, _leaf_size);
+  //std::cout << "voxelizedCloud size: " << voxelCloud->size() << std::endl;
   _groundRemover->setInputCloudPtr(voxelCloud);
   _groundRemover->setFilterCloudPtr(out.makeShared());
-  _groundRemover->removeGroundPlane();
+  _groundRemover->removeGroundPlane(); // problematic function 
   PointCloud::ConstPtr noGroundCloud = _groundRemover->getCloudWithoutGroundPlanePtr();
   out = *noGroundCloud;
-}
+  }
 
 void ElevationMapGroundRemover::removeRangeGreaterThan(const PointCloud& cloud_in, PointCloud& cloud_out, float range) {
   std::size_t j = 0;

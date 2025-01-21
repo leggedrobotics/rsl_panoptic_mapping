@@ -10,7 +10,7 @@ MatchedMessageProcessor::MatchedMessageProcessor(
     float groundRemovalVoxelSize)
     : node_(node) {
   // Initialize ground remover
-  groundRemover_ = std::make_unique<ground_remover::ElevationMapGroundRemover>(groundRemovalConfig, groundRemovalVoxelSize);
+  groundRemover_ = std::make_unique<ground_remover::ElevationMapGroundRemover>(groundRemovalConfig, groundRemovalVoxelSize, node_);
 
   // Publisher for raw camera image
   rawCamImagePublisher_ = node_->create_publisher<sensor_msgs::msg::CompressedImage>("republished_image", 10);

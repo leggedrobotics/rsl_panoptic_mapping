@@ -87,8 +87,22 @@ RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
 RUN apt-get update && apt-get install -y \
     ros-${ROS_DISTRO}-navigation2 \
     ros-${ROS_DISTRO}-cv-bridge \
-    ros-${ROS_DISTRO}-octomap-msgs \ 
+    ros-${ROS_DISTRO}-octomap-msgs \
+    libopen3d-dev \
     && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y \
+    mesa-utils \
+    libglvnd-dev \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y \
+    vulkan-tools \
+    libvulkan1 \
+    && rm -rf /var/lib/apt/lists/*
+
 
 # ---------------------------------------
 # Create ROS 2 workspace and copy package

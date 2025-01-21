@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(dynamic_mapping_msgs_ros2)
+project(jsk_recognition_msgs)
 
 set(CMAKE_CXX_STANDARD 14)
 
@@ -11,8 +11,8 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
 set(msg_files
-	"msg/Track.msg"
-	"msg/TrackArray.msg"
+	"msg/BoundingBox.msg"
+	"msg/BoundingBoxArray.msg"
 	)
 
 rosidl_generate_interfaces(${PROJECT_NAME}

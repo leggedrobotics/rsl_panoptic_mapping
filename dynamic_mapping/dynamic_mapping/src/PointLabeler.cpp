@@ -2,19 +2,22 @@
 #include <open3d/geometry/PointCloud.h>
 #include <opencv2/core/eigen.hpp>
 #include <unordered_map>
-
+#include <iostream>
 Eigen::Matrix4Xd PointLabeler::labelPoints(const Eigen::Matrix3Xd& pts, const cv::Mat& segMask, const Eigen::Isometry3d& lidarToCamera,
                                            const bool isNewMask, std::vector<int>& labelPtsIdx) {
+  
   projector_.projectPtsToCameraFrame(pts, lidarToCamera);
-  labelPtsIdx = projector_.filterVisiblePoints(pts, segMask.size());
+  labelPtsIdx = projector_.filterVisiblePoints(pts, segMask.size()); // issue is here
   Eigen::Matrix3Xi pixelPts = projector_.getPixelPoints().cast<int>();
   Eigen::Matrix3Xd visiblePts = projector_.getVisiblePoints();
-
   Eigen::RowVectorXd labels(pixelPts.cols());
+
   for (int i = 0; i < pixelPts.cols(); i++) {
     labels(i) = segMask.at<cv::Vec3b>(cv::Point(pixelPts(0, i), pixelPts(1, i)))[2];
   }
+
   Eigen::Matrix4Xd labelPoints(4, visiblePts.cols());
+
   labelPoints << visiblePts, labels;
   if (isNewMask) {
     labelledPoints_ = labelPoints;

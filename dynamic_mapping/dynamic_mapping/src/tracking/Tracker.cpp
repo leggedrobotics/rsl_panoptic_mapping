@@ -1,5 +1,5 @@
 #include "dynamic_mapping/tracking/Tracker.h"
-#include <ros/console.h>
+#include <rclcpp/rclcpp.hpp>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -186,16 +186,20 @@ std::unordered_map<std::string, Tracker::DetectionDict> Tracker::generateTrackHy
 
 std::vector<std::string> Tracker::deleteTracks(std::unordered_map<std::string, Track>& tracks, double threshold) {
   std::vector<std::string> deletionCandidates;
+
   for (const auto& t : tracks) {
     double covTrace = t.second.getCovariance().trace();
     if (covTrace > threshold) {
-      ROS_DEBUG_STREAM("Deleting track " << t.first << ": " << covTrace << " > " << threshold);
+      RCLCPP_DEBUG(rclcpp::get_logger("dynamic_mapping_ros"), 
+                   "Deleting track %s: %f > %f", t.first.c_str(), covTrace, threshold);
       deletionCandidates.push_back(t.first);
     }
   }
-  for (std::string k : deletionCandidates) {
+
+  for (const std::string& k : deletionCandidates) {
     tracks.erase(k);
   }
+
   return deletionCandidates;
 }
 

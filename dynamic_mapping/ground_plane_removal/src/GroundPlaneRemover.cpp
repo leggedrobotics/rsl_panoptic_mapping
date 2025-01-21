@@ -26,6 +26,7 @@ void GroundPlaneRemover::setInputCloud(const PointCloud &inputCloud) {
 	*inputCloud_ = inputCloud; //copy
 }
 void GroundPlaneRemover::removeGroundPlane() {
+	std::cout << "inputCloud siz in removeGroundPlane " << inputCloud_->size() << std::endl;
 	noGroundPlaneCloud_ = applyCropBox(inputCloud_, params_.cropBox_);
 }
 

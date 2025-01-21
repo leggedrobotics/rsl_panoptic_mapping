@@ -26,12 +26,13 @@ class MovingObjectsFilter {
   Eigen::Matrix4Xd getFilteredCloudDynamic() { return outputCloudDynamic_; };
   std::vector<Track> getTracks();
 
+  LidarCameraProjector projector_;
+
  private:
   std::vector<Detection> generateDetections(const std::vector<Eigen::Matrix4Xd>& labelledClusters, double timestamp);
   std::vector<BoundingBox> detectionBoxes_;
   std::vector<BoundingBox> tracksToBoundingBoxes();
   Eigen::Matrix<double, 3, 4> cameraProjection_;
-  LidarCameraProjector projector_;
   std::unique_ptr<PointLabeler> labeler_;
   std::unique_ptr<Tracker> tracker_;
   Eigen::Isometry3d toCamera_;

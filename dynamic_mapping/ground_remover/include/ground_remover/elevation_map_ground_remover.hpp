@@ -13,6 +13,7 @@ namespace ground_remover {
 class ElevationMapGroundRemover : public GroundRemover {
  public:
   ElevationMapGroundRemover(const std::string& configFilePath, const float leaf_size, rclcpp::Node::SharedPtr node);
+  virtual ~ElevationMapGroundRemover() = default;
   void removeGround(PointCloud& in, PointCloud& out) override;
 
  private:

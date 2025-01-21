@@ -7,7 +7,7 @@ def generate_launch_description():
     # Declare command-line launch arguments (replacing <arg> tags in ROS 1).
     config_filepath_arg = DeclareLaunchArgument(
         'config_filepath',
-        default_value='config/config.yaml',
+        default_value= '/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/ground_remover/config/config.yaml',#'config/config.yaml',
         description='Path to ground_remover config file.'
     )
     algorithm_arg = DeclareLaunchArgument(
@@ -25,11 +25,11 @@ def generate_launch_description():
         default_value='0.15',
         description='Voxel grid leaf size.'
     )
-    patchwork_params_arg = DeclareLaunchArgument(
-        'patchwork_params_file',
-        default_value='config/params_ouster128.yaml',
-        description='Patchwork parameter file.'
-    )
+    #patchwork_params_arg = DeclareLaunchArgument(
+    #    'patchwork_params_file',
+    #    default_value='config/params_ouster128.yaml',
+    #    description='Patchwork parameter file.'
+    #)
 
     # ground_remover node (replacing <node pkg="ground_remover" ... />).
     ground_remover_node = Node(
@@ -48,13 +48,13 @@ def generate_launch_description():
 
     # (Optional) patchwork node that consumes the YAML file
     # in lieu of <rosparam command="load" file="$(find patchwork)/config/params_ouster128.yaml" />
-    patchwork_node = Node(
-        package='patchwork',
-        executable='patchwork_node',  # replace with the actual executable name
-        name='patchwork',
-        output='screen',
-        parameters=[LaunchConfiguration('patchwork_params_file')]
-    )
+    #patchwork_node = Node(
+    #    package='patchwork',
+    #    executable='patchwork_node',  # replace with the actual executable name
+    #    name='patchwork',
+    #    output='screen',
+    #    parameters=[LaunchConfiguration('patchwork_params_file')]
+    #)
 
     # Assemble the launch description, similar to listing tags in the XML.
     return LaunchDescription([
@@ -62,7 +62,7 @@ def generate_launch_description():
         algorithm_arg,
         input_topic_arg,
         voxel_size_arg,
-        patchwork_params_arg,
+        #patchwork_params_arg,
         ground_remover_node,
-        patchwork_node
+        #patchwork_node
     ])

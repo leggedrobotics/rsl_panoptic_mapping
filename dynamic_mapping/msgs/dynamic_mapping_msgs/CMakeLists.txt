@@ -1,30 +1,28 @@
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.5)
 project(dynamic_mapping_msgs)
 
-find_package(catkin REQUIRED COMPONENTS
-  message_generation
-  std_msgs
-  geometry_msgs
-)
+set(CMAKE_CXX_STANDARD 14)
+
+find_package(ament_cmake REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
+set(msg_files
+	"msg/Track.msg"
+	"msg/TrackArray.msg"
+	)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+	${msg_files}
+	DEPENDENCIES
+	builtin_interfaces
+	std_msgs
+	geometry_msgs
+	)
+ament_export_dependencies(rosidl_default_runtime)
+ament_package()
 
 
-################################################
-## Declare ROS messages, services and actions ##
-################################################
-
-## Generate messages in the 'msg' folder
-add_message_files(DIRECTORY msg)
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  geometry_msgs
-)
-
-###################################
-## catkin specific configuration ##
-###################################
-catkin_package(
-  CATKIN_DEPENDS message_runtime std_msgs geometry_msgs
-)

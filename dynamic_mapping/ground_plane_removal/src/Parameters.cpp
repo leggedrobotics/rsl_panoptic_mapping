@@ -18,6 +18,22 @@ void loadParameters(const YAML::Node &node, GroundPlaneCropBoxParameters *p) {
 	p->maxZ_ = node["crop_box_maxZ"].as<double>();
 }
 
+
+void loadParameters(const std::string &filename, ground_removal::ElevationMapGroundPlaneRemoverParam *p, const rclcpp::Logger & node_logger) {
+
+	YAML::Node node = YAML::LoadFile(filename);
+	auto groundRemoval = node["ground_plane_removal"]["elevation_map"];
+	grid_map::grid_map_pcl::PclLoaderParameters pclLoaderParam(node_logger);
+	pclLoaderParam.handleYamlNode(groundRemoval);
+	p->pclConverter_ = pclLoaderParam;
+
+	p->medianFilteringRadius_  = groundRemoval["median_filtering_radius"].as<double>();
+	p->medianFilterDownsampleFactor_ = groundRemoval["median_filter_points_downsample_factor"].as<int>();
+	p->minHeightAboveGround_ = groundRemoval["min_height_above_ground"].as<double>();
+	p->maxHeightAboveGround_ = groundRemoval["max_height_above_ground"].as<double>();
+	p->isUseMedianFiltering_ = groundRemoval["is_use_median_filter"].as<bool>();
+}
+
 std::ostream& operator<<(std::ostream& out, const GroundPlaneCropBoxParameters& p) {
   out << "┌────────────────────────────────────────────────────┐\n";
   out << "│                 GroundPlaneCropBoxParameters       │\n";

@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>message_matching</name>
   <version>0.0.0</version>
   <description>Package providing means to match lidar point cloud data with camera images</description>
@@ -7,16 +7,14 @@
   <maintainer email="peyschen@ethz.ch">Pol Eyschen</maintainer>
   <license>TODO</license>
 
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <depend>roscpp</depend>
-  <depend>nodelet</depend>
-  <depend>sensor_msg</depend>
-  <depend>fkie_message_filters</depend>
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>message_filters</depend>
   <depend>message_matching_msgs</depend>
 
-
   <export>
-    <nodelet plugin="${prefix}/nodelet_plugins.xml" />
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

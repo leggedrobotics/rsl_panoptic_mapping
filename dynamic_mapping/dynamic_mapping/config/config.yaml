@@ -8,7 +8,7 @@ dynamic_mapping:
   should_undistort: false #true if the code should undistort the image, usually not necessary
 
 message_processor:
-  matched_message_topic: "/message_matching_nodelet/matched_messages"
+  matched_message_topic: "/matched_messages"
   segmentation_mask_topic: "/src/mask"
 
 object_filter:

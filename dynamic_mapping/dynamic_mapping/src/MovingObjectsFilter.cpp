@@ -1,6 +1,7 @@
 #include "dynamic_mapping/MovingObjectsFilter.h"
 #include <open3d/geometry/BoundingVolume.h>
 #include <open3d/geometry/KDTreeFlann.h>
+#include <iostream>
 
 MovingObjectsFilter::MovingObjectsFilter(const ObjectFilterParameters& parameters)
     : boundingBoxMargin_(parameters.boundingBoxMargin),
@@ -19,9 +20,9 @@ void MovingObjectsFilter::filterObjects(const Eigen::Matrix3Xd& pointCloud, cons
   labelledClusters_ = labeler_->getLabeledClusters(noGroundPointCloud, minimumClusterSize_);
   std::vector<Detection> detections = generateDetections(labelledClusters_, timestamp);
   tracker_->track(detections);
-
   bboxes_ = tracksToBoundingBoxes();
   cropPointCloud(pointCloud, noGroundPointCloud, boundingBoxMargin_, outputCloudStatic_, outputCloudDynamic_);
+
 }
 
 std::vector<Detection> MovingObjectsFilter::generateDetections(const std::vector<Eigen::Matrix4Xd>& labelledClusters, double timestamp) {
@@ -90,7 +91,6 @@ void MovingObjectsFilter::cropPointCloud(const Eigen::Matrix3Xd& cloud, const Ei
   Eigen::RowVectorXd labels = Eigen::RowVectorXd::Zero(cleanCloud.cols());
 
   open3d::geometry::KDTreeFlann rawCloudTree(cleanCloud);
-
   if (segmentOnGroundRemovedCloud_) {
     for (int i = 0; i < noGroundPointCloud.cols(); i++) {
       bool outside = true;
@@ -168,6 +168,7 @@ void MovingObjectsFilter::cropPointCloud(const Eigen::Matrix3Xd& cloud, const Ei
       }
     }
   }
+
   Eigen::Matrix4Xd labelledStaticCloud;
   Eigen::Matrix3Xd staticCloud;
   if (!indicesStatic.empty()) {
@@ -177,11 +178,13 @@ void MovingObjectsFilter::cropPointCloud(const Eigen::Matrix3Xd& cloud, const Ei
   } else {
     staticCloud = cleanCloud;
   }
+
   std::vector<int> indices;
   {
-    std::lock_guard<std::mutex> guard{segMaskLock_};
+    std::lock_guard<std::mutex> guard{segMaskLock_}; // Issue below
     labelledStaticCloud = labeler_->labelPoints(staticCloud, currentSegMask_, toCamera_, false, indices);
   }
+
   cloudStatic.conservativeResize(4, staticCloud.cols());
   cloudStatic.topRows(3) = staticCloud;
   cloudStatic.bottomRows(1).setConstant(255);
@@ -213,6 +216,7 @@ std::vector<int> MovingObjectsFilter::getInverseIndices(std::vector<size_t>& ind
 }
 
 void MovingObjectsFilter::updateLabels(const Eigen::Matrix3Xd& noGroundPointCloud, const cv::Mat& segmentationMask, double timestamp) {
+  // std::cout<<"currentSegMask_ updated"<<std::endl;
   {
     std::lock_guard<std::mutex> guard{segMaskLock_};
     currentSegMask_ = segmentationMask;

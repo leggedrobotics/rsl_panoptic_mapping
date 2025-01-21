@@ -9,9 +9,9 @@
 #include <yaml-cpp/yaml.h>
 #include <unordered_map>
 #include <vector>
-#include "dynamic_mapping/bounding_box.hpp"
-#include "dynamic_mapping/parameters.hpp"
-#include "dynamic_mapping/tracking/detection.hpp"
+#include "dynamic_mapping/BoundingBox.h"
+#include "dynamic_mapping/Parameters.h"
+#include "dynamic_mapping/tracking/Detection.h"
 
 // Convert Eigen matrix to Open3D PointCloud
 open3d::geometry::PointCloud eigenToOpen3d(const Eigen::Matrix3Xd& pts);
@@ -45,6 +45,8 @@ sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen:
 // Convert Eigen matrix to ROS2 PointCloud2
 sensor_msgs::msg::PointCloud2 eigenToRos(const Eigen::Matrix4Xd& cloud, const std::string& frame_id);
 
+sensor_msgs::msg::PointCloud2 eigenToRosXYZ(const Eigen::Matrix3Xd& cloud,
+                                            const std::string& frame_id);
 // Load parameters from a YAML file
 void loadParameters(const std::string& file, MessageProcessorParameters* params);
 void loadParameters(const std::string& file, ObjectFilterParameters* params);

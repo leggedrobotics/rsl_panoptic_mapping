@@ -57,5 +57,6 @@ struct ElevationMapGroundPlaneRemoverParam : public GroundPlaneRemoverParam {
 
 std::ostream& operator<<(std::ostream& out, const GroundPlaneCropBoxParameters& p);
 void loadParameters(const YAML::Node &node, GroundPlaneCropBoxParameters *p);
+void loadParameters(const std::string &filename, ground_removal::ElevationMapGroundPlaneRemoverParam *p, const rclcpp::Logger & node_logger);
 
 } // namespace ground_removal

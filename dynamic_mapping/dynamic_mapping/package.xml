@@ -18,11 +18,18 @@
     <depend>ground_remover</depend>
     <depend>tf2</depend>
     <depend>tf2_ros</depend>
+    <depend>tf2_eigen</depend>
     <depend>tf2_sensor_msgs</depend>
     <depend>dynamic_mapping_msgs</depend>
     <depend>visualization_msgs</depend>
     <depend>open3d</depend>
     <depend>message_matching_msgs</depend>
+    <depend>message_matching</depend>
+    <depend>ground_plane_removal</depend>
+    <depend>grid_map_pcl</depend>
+    <depend>pcl_conversions</depend>
+    <depend>Eigen3</depend>
+
 
     <!-- Exported interfaces -->
     <export>

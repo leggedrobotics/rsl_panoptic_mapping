@@ -25,8 +25,8 @@ T clamp(const T val, const T lower, const T upper) {
 }
 
 void bindToRange(const grid_map::Matrix &data, grid_map::Index *id) {
-	const int i = clamp(id->x(), 0, (int) data.rows());
-	const int j = clamp(id->y(), 0, (int) data.cols());
+	const int i = clamp(id->x(), 0, (int) data.rows()-1);
+	const int j = clamp(id->y(), 0, (int) data.cols()-1);
 	id->x() = i;
 	id->y() = j;
 }
@@ -66,7 +66,8 @@ void medianFiltering(grid_map::GridMap *mapPtr, double estimationRadius, int dow
 	std::vector<double> xs, ys;
 	computePointsForLocalTerrainFit(estimationRadius, map, &xs, &ys, downsampleFactorNumData);
 	const int maxNpoints = xs.size();
-
+	//std::cout << "maxNpoints " << maxNpoints << std::endl;
+	//std::cout << "ys.size() " << ys.size() << std::endl;
 #ifdef GROUND_PLANE_REMOVAL_OPENMP_FOUND
 	omp_set_num_threads(nThreads);
 #pragma omp parallel for schedule(static)
@@ -93,6 +94,7 @@ void medianFiltering(grid_map::GridMap *mapPtr, double estimationRadius, int dow
 		gridMapDataCopy(currentCellId.x(), currentCellId.y()) = goodHs[goodHs.size() / 2];
 	}  // end iterating over linear index
 	map.get(elevationLayer) = gridMapDataCopy;
+	//std::cout << "medianFiltering done" << std::endl; // This is not reached
 }
 
 } // namespace
@@ -119,14 +121,16 @@ const grid_map::GridMap& ElevationMapGroundPlaneRemover::getElevationMap() const
 }
 
 void ElevationMapGroundPlaneRemover::removeGroundPlane() {
+	//std::cout << "inputCloud siz in removeGroundPlane " << inputCloud_->size() << std::endl;
 	pclToGridMap_.setInputCloud(inputCloud_);
 	pclToGridMap_.initializeGridMapGeometryFromInputCloud();
 	pclToGridMap_.addLayerFromInputCloud(elevationLayer);
 	auto gridMap = pclToGridMap_.getGridMap();
+	////std::cout << "gridMap size in removeGroundPlane " << gridMap.getSize() << std::endl;
 	if (param_.isUseMedianFiltering_) {
 		medianFiltering(&gridMap, param_.medianFilteringRadius_, param_.medianFilterDownsampleFactor_,
 				param_.pclConverter_.get().numThreads_);
-	}
+	} // This is failing
 
 	elevationMap_ = gridMap;
 	noGroundPlaneCloud_.reset(new PointCloud);

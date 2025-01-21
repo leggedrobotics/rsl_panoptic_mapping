@@ -19,10 +19,10 @@ namespace ground_removal{
 class ElevationMapGroundPlaneRemover : public GroundPlaneRemover {
 public:
 	//ElevationMapGroundPlaneRemover() = default;
-    explicit ElevationMapGroundPlaneRemover(rclcpp::Node::SharedPtr nh);//, const rclcpp::Logger & node_logger);
-	virtual ~ElevationMapGroundPlaneRemover() = default;
+     explicit ElevationMapGroundPlaneRemover(rclcpp::Node::SharedPtr nh);//, const rclcpp::Logger & node_logger);
+     virtual ~ElevationMapGroundPlaneRemover() = default;
 
-	 void removeGroundPlane() override;
+	void removeGroundPlane() override;
      void setParameters(const GroundPlaneRemoverParam &p);
      const ElevationMapGroundPlaneRemoverParam &getParameters() const;
      const grid_map::GridMap &getElevationMap() const;
@@ -34,9 +34,9 @@ private:
      void snapToMapLimits(const grid_map::GridMap &map, double *x, double *y) const;
 
      rclcpp::Node::SharedPtr node_ = nullptr;
-	 ElevationMapGroundPlaneRemoverParam param_;
-	 grid_map::GridMapPclLoader pclToGridMap_;
-	 grid_map::GridMap elevationMap_;
+	ElevationMapGroundPlaneRemoverParam param_;
+	grid_map::GridMapPclLoader pclToGridMap_;
+	grid_map::GridMap elevationMap_;
      PointCloud::Ptr filterCloud_;
 
 };

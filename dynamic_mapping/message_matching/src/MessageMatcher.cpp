@@ -1,70 +1,139 @@
+#include "message_matching/MessageMatcher.hpp"
+
+// For boost::make_shared in ROS2 code, you can also use std::make_shared.
+#include <boost/make_shared.hpp>
+
+
+MessageMatcher::MessageMatcher(const rclcpp::Node::SharedPtr & node)
+: node_(node)
+{
+  // 1. Declare & load parameters
+  getParameters();
+  // 2. Setup pubs, subs, sync
+  setupRos();
+}
+
+void MessageMatcher::getParameters()
+{
+  // Declare parameters with defaults
+  node_->declare_parameter<std::string>("pointcloud_topic", "pointcloud");
+  node_->declare_parameter<std::string>("image_topic", "cameraImage");
+  node_->declare_parameter<std::string>("output_topic", "matched_messages");
+  node_->declare_parameter<double>("lidar_frequency", 10.0);
+  node_->declare_parameter<double>("sensor_offset", 0.0);
+
+  // Retrieve them into outParams_
+  node_->get_parameter("pointcloud_topic", outParams_.pointCloudTopic_);
+  node_->get_parameter("image_topic",      outParams_.cameraTopic_);
+  node_->get_parameter("output_topic",     outParams_.outputTopic_);
+  node_->get_parameter("lidar_frequency",  outParams_.lidarFrequency_);
+  node_->get_parameter("sensor_offset",    outParams_.sensorOffset_);
+
+  RCLCPP_WARN_STREAM(node_->get_logger(),
+                     "Using parameters:"
+                     << " pointcloud_topic=" << outParams_.pointCloudTopic_
+                     << ", image_topic=" << outParams_.cameraTopic_
+                     << ", output_topic=" << outParams_.outputTopic_
+                     << ", lidar_frequency=" << outParams_.lidarFrequency_
+                     << ", sensor_offset=" << outParams_.sensorOffset_);
+}
+
+void MessageMatcher::setupRos()
+{
+  // Create publisher
+  matchedMessagesPublisher_ = node_->create_publisher<message_matching_msgs::msg::MatchedPair>(
+      outParams_.outputTopic_,
+      1  /* QoS depth */
+  );
+
+  // Create message_filters subscribers
+  //pointCloudOnlySubscriber_ = node_->create_subscription<sensor_msgs::msg::PointCloud2>(
+  //    outParams_.pointCloudTopic_,  // Topic name
+  //    1,                            // QoS depth
+  //    std::bind(&MessageMatcher::pointCloudCallback, this, std::placeholders::_1)  // Callback
+  //);
 //
-// Created by peyschen on 15/03/23.
-//
+  //// Create message_filters subscribers
+  //ImageOnlySubscriber_ = node_->create_subscription<sensor_msgs::msg::CompressedImage>(
+  //    outParams_.cameraTopic_,  // Topic name
+  //    1,                            // QoS depth
+  //    std::bind(&MessageMatcher::cameraImageCallback, this, std::placeholders::_1)  // Callback
+  //);
 
-#include "message_matching/MessageMatcher.h"
+  pointCloudSubscriber_ =
+    std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
+        node_,
+        outParams_.pointCloudTopic_,
+        rclcpp::QoS(10).get_rmw_qos_profile()  // convert QoS to rmw
+    );
 
-void MessageMatcher::getParameters(const ros::NodeHandle& nh) {
-  if (!nh.param<std::string>("pointcloud_topic", outParams_.pointCloudTopic_, "pointcloud")) {
-    ROS_WARN_STREAM("Did not find 'pointcloud_topic' parameter, defaulting to " << outParams_.pointCloudTopic_);
-  }
-  if (!nh.param<std::string>("image_topic", outParams_.cameraTopic_, "cameraImage")) {
-    ROS_WARN_STREAM("Did not find 'image_topic' parameter, defaulting to " << outParams_.cameraTopic_);
-  }
-  if (!nh.param<std::string>("output_topic", outParams_.outputTopic_, "matched_messages")) {
-    ROS_WARN_STREAM("Did not find 'output_topic' parameter, defaulting to " << outParams_.outputTopic_);
-  }
-  if (!nh.param<double>("lidar_frequency", outParams_.lidarFrequency_, 10.0)) {
-    ROS_WARN_STREAM("Did not find 'lidar_frequency' parameter, defaulting to " << outParams_.lidarFrequency_);
-  }
-  if (!nh.param<double>("sensor_offset", outParams_.lidarFrequency_, 0.0)) {
-    ROS_WARN_STREAM("Did not find 'sensor_offset' parameter, defaulting to " << outParams_.lidarFrequency_);
-  }
+  cameraImageSubscriber_ =
+    std::make_shared<message_filters::Subscriber<sensor_msgs::msg::CompressedImage>>(
+        node_,
+        outParams_.cameraTopic_,
+        rclcpp::QoS(10).get_rmw_qos_profile()
+    );
+
+  // Create synchronizer
+  sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
+      SyncPolicy(10 /* queue size */),
+      *pointCloudSubscriber_,
+      *cameraImageSubscriber_);
+
+  // Register synchronized callback
+  sync_->registerCallback(
+    std::bind(&MessageMatcher::synchronizedCallback, this,
+              std::placeholders::_1, std::placeholders::_2));
 }
 
-void MessageMatcher::setupRos(ros::NodeHandle& nh) {
-  setupMessageFilterChain(nh);
+void MessageMatcher::synchronizedCallback(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
+  const sensor_msgs::msg::CompressedImage::ConstSharedPtr & image)
+{
+  //RCLCPP_INFO(node_->get_logger(), "Received synchronized messages!");
+  //RCLCPP_INFO(node_->get_logger(), "PointCloud timestamp: %ld.%ld", cloud->header.stamp.sec, cloud->header.stamp.nanosec);
+  //RCLCPP_INFO(node_->get_logger(), "Image timestamp: %ld.%ld", image->header.stamp.sec, image->header.stamp.nanosec);
+  // 1. Compensate the incoming point cloud
+  auto compensatedCloud = compensateLidarRotation(cloud);
 
-  matchedMessagesPublisher_ = nh.advertise<message_matching_msgs::MatchedPair>(outParams_.outputTopic_, 1, false);
+  // 2. Publish matched messages
+  publishMatchedMessages(compensatedCloud, image);
 }
 
-void MessageMatcher::setupMessageFilterChain(ros::NodeHandle& nh) {
-  pointCloudSubscriber_ = std::make_unique<PointCloudSubscriber>(nh, outParams_.pointCloudTopic_, 1);
-  cameraImageSubscriber_ = std::make_unique<CompressedImageSubscriber>(nh, outParams_.cameraTopic_, 1);
+sensor_msgs::msg::PointCloud2::ConstSharedPtr
+MessageMatcher::compensateLidarRotation(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & in) const
+{
+  rclcpp::Time originalTimestamp = in->header.stamp;
+  sensor_msgs::msg::PointCloud2 out(*in);
 
-  lidarRotationCompensator_ = std::make_unique<LidarRotationCompensator>();
+  // Compute offset duration
+  double offset_sec = outParams_.sensorOffset_ / outParams_.lidarFrequency_;
+  rclcpp::Duration offset_duration = rclcpp::Duration::from_seconds(offset_sec);
+  out.header.stamp = originalTimestamp + offset_duration;
 
-  messageSynchronizer_ = std::make_unique<MessageSynchronizer>();
-  output_ = std::make_unique<Output>();
-
-  lidarRotationCompensator_->set_processing_function(
-      std::bind(&MessageMatcher::compensateLidarRotation, this, std::placeholders::_1, std::placeholders::_2));
-  output_->set_processing_function(std::bind(&MessageMatcher::publishMatchedMessages, this, std::placeholders::_1, std::placeholders::_2));
-
-  lidarRotationCompensator_->connect_to_source(*pointCloudSubscriber_);
-  messageSynchronizer_->connect_to_sources(*lidarRotationCompensator_, *cameraImageSubscriber_);
-  messageSynchronizer_->connect_to_sink(*output_);
+  return std::make_shared<sensor_msgs::msg::PointCloud2>(out);
 }
 
-void MessageMatcher::setup(ros::NodeHandle& pnh) {
-  getParameters(pnh);
-  setupRos(pnh);
-}
-void MessageMatcher::compensateLidarRotation(const sensor_msgs::PointCloud2_<std::allocator<void>>::ConstPtr& in,
-                                             const LidarRotationCompensator::CallbackFunction& callbackFun) const {
-  ros::Time originalTimestamp = in->header.stamp;
-  sensor_msgs::PointCloud2 out(*in);
-  out.header.stamp = originalTimestamp + ros::Duration().fromSec(outParams_.sensorOffset_ / outParams_.lidarFrequency_);
-
-  callbackFun(boost::make_shared<sensor_msgs::PointCloud2>(out));
-}
-bool MessageMatcher::publishMatchedMessages(const sensor_msgs::PointCloud2::ConstPtr& matchedPointCloud,
-                                            const sensor_msgs::CompressedImage::ConstPtr& matchedCameraImage) {
-  message_matching_msgs::MatchedPair msg;
+bool MessageMatcher::publishMatchedMessages(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & matchedPointCloud,
+  const sensor_msgs::msg::CompressedImage::ConstSharedPtr & matchedCameraImage)
+{
+  // Construct the output message
+  message_matching_msgs::msg::MatchedPair msg;
   msg.point_cloud = *matchedPointCloud;
   msg.camera_image = *matchedCameraImage;
   msg.header.stamp = matchedPointCloud->header.stamp;
 
-  matchedMessagesPublisher_.publish(msg);
+  matchedMessagesPublisher_->publish(msg);
   return true;
+}
+
+void MessageMatcher::cameraImageCallback(const sensor_msgs::msg::CompressedImage::ConstSharedPtr & msg)
+{
+    //RCLCPP_INFO(node_->get_logger(), "Camera image message received");
+}
+
+void MessageMatcher::pointCloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg)
+{
+    //RCLCPP_INFO(node_->get_logger(), "Point cloud message received");
 }
