@@ -5,23 +5,42 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch.substitutions import LaunchConfiguration
 
+from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
+
+    # Get the share directory of each relevant package
+    dynamic_mapping_share_dir = get_package_share_directory('dynamic_mapping')
+    print("dynamic_mapping_share_dir: ", dynamic_mapping_share_dir)
+    ground_remover_share_dir = get_package_share_directory('ground_remover')
+    message_matching_share_dir = get_package_share_directory('message_matching')
+    #m545_urdf_share_dir = get_package_share_directory('m545_urdf')
+    #m545_rviz_share_dir = get_package_share_directory('m545_rviz')
+    # Build relative (package-based) paths 
+    default_dynamic_mapping_config = os.path.join(dynamic_mapping_share_dir, 'config', 'config.yaml')
+    default_ground_removal_config = os.path.join(ground_remover_share_dir, 'config', 'config.yaml')
+    default_message_matching_config = os.path.join(message_matching_share_dir, 'config', 'config.yaml')
+    default_rviz_config = os.path.join(dynamic_mapping_share_dir, 'rviz', 'rviz.rviz')
+
+    print("default_rviz_config: ", default_rviz_config)
+    
+    
+    
     # Declare launch arguments
     publish_tf_arg = DeclareLaunchArgument(
         'publish_tf', default_value='false', description='Whether to publish tf'
     )
     config_file_arg = DeclareLaunchArgument(
-        'config_file', default_value='/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/dynamic_mapping/config/config.yaml',
+        'config_file', default_value=default_dynamic_mapping_config,
         description='Path to the dynamic mapping config file'
     )
     ground_removal_config_file_arg = DeclareLaunchArgument(
-        'ground_removal_config_file', default_value='/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/ground_remover/config/config.yaml',
+        'ground_removal_config_file', default_value=default_ground_removal_config,
         description='Path to the ground removal config file'
     )
     message_matching_file_arg = DeclareLaunchArgument(
-        'message_matching_config_file', default_value='/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/message_matching/config/config.yaml',
+        'message_matching_config_file', default_value=default_message_matching_config,
         description='Path to the message matching config file'
     )
     ground_removal_voxel_size_arg = DeclareLaunchArgument(
@@ -80,12 +99,20 @@ def generate_launch_description():
         prefix=LaunchConfiguration('launch_prefix')
     )
 
+    # Define the RViz node
     rviz_node = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz_dynamic_mapping',
-        arguments=['-d', "/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/dynamic_mapping/rviz/rviz.rviz"],
+        arguments=['-d', LaunchConfiguration('rviz_config')],
         condition=IfCondition(LaunchConfiguration('launch_rviz'))
+    )
+
+    # For convenience, either declare an argument for the RViz config or just use default:
+    rviz_config_arg = DeclareLaunchArgument(
+        'rviz_config',
+        default_value=default_rviz_config,
+        description='Path to the RViz config file.'
     )
 
     # Assemble the launch description
@@ -97,6 +124,7 @@ def generate_launch_description():
         launch_rviz_arg,
         launch_prefix_arg,
         message_matching_file_arg,
+        rviz_config_arg,
         tf_group,
         dynamic_mapping_node,
         rviz_node,

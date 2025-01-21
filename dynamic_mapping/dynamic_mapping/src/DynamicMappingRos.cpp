@@ -84,7 +84,6 @@ void DynamicMappingRos::callback(
     if (raw.height == 0 || raw.width == 0) {
           return;
       }
-    //std::cout<<"callback"<<std::endl;
     if (noGnd.height == 0 || noGnd.width == 0) {
           return;
       }
@@ -242,7 +241,9 @@ void DynamicMappingRos::maskCallback(const sensor_msgs::msg::PointCloud2& noGnd,
   // do the copying ROS <-> OpenCV ourselves because cv_bridge does weird stuff to the mask
   cv::Mat image;
   cv::Mat(mask.height, mask.width, CV_8UC3, const_cast<uchar*>(&mask.data[0]), mask.step).copyTo(image);
-  
+  if (mask.data.size() < mask.step * mask.height) {
+      throw std::runtime_error("Image data size is inconsistent with step and height.");
+  }
   if (mask.encoding == "rgb8") {
     // manually swap red and blue channels, we are expecting bgr8 image
     cv::Mat rgb[3], tmp;
@@ -252,6 +253,7 @@ void DynamicMappingRos::maskCallback(const sensor_msgs::msg::PointCloud2& noGnd,
     rgb[2] = tmp;
     cv::merge(rgb, 3, image);
   }
+
 
   cv::Mat segmentationMask = shouldUndistort_ ? undistortMask(image) : image;
   filter_->setCameraTransform(tf2::transformToEigen(worldToCamera.transform));

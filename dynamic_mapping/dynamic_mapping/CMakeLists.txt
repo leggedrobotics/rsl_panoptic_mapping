@@ -142,6 +142,20 @@ install(
   DESTINATION share/${PROJECT_NAME}
 )
 
+
+# Install configuration files
+install(
+  DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
+install(
+  DIRECTORY rviz/
+  DESTINATION share/${PROJECT_NAME}/rviz
+)
+
+
+
 # Install other resources
 #install(
 #  FILES nodelet_plugins.xml

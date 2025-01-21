@@ -68,6 +68,12 @@ install(DIRECTORY include/
   DESTINATION include
 )
 
+# Install configuration files
+install(
+  DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
 # Install package information (like package.xml)
 #install(
 #  DIRECTORY share/${PROJECT_NAME}

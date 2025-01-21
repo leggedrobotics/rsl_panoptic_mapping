@@ -3,11 +3,19 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+from ament_index_python.packages import get_package_share_directory
+import os
+
 def generate_launch_description():
+    
+    ground_remover_share_dir = get_package_share_directory('ground_remover')
+    default_ground_removal_config = os.path.join(ground_remover_share_dir, 'config', 'config.yaml')
+
     # Declare command-line launch arguments (replacing <arg> tags in ROS 1).
+    
     config_filepath_arg = DeclareLaunchArgument(
         'config_filepath',
-        default_value= '/home/jonas/Coding/boulder_perception/ros2_ws/src/rsl_panoptic_mapping/dynamic_mapping/ground_remover/config/config.yaml',#'config/config.yaml',
+        default_value= default_ground_removal_config,
         description='Path to ground_remover config file.'
     )
     algorithm_arg = DeclareLaunchArgument(
