@@ -103,9 +103,85 @@ Visualization Manager:
         All Enabled: true
         BASE:
           Value: true
+        BASE_inertia:
+          Value: true
         BOOM:
           Value: true
+        CABIN:
+          Value: true
+        ENDEFFECTOR:
+          Value: true
+        ENDEFFECTOR_CONTACT:
+          Value: true
+        GNSS_L:
+          Value: true
+        GNSS_R:
+          Value: true
+        IMU_CABIN_base_link:
+          Value: true
+        IMU_CABIN_link:
+          Value: true
+        IMU_base_link:
+          Value: true
+        IMU_link:
+          Value: true
+        LF_BEAM:
+          Value: true
+        LF_BEARING:
+          Value: true
+        LF_KNUCKLE:
+          Value: true
+        LF_PARALLEL:
+          Value: true
+        LF_SWIVEL:
+          Value: true
+        LF_WHEEL:
+          Value: true
+        LF_WHEEL_CONTACT:
+          Value: true
+        LH_BEAM:
+          Value: true
+        LH_KNUCKLE:
+          Value: true
+        LH_OUTRIGGER:
+          Value: true
+        LH_ROTATOR:
+          Value: true
+        LH_WHEEL:
+          Value: true
+        LH_WHEEL_CONTACT:
+          Value: true
+        RF_BEAM:
+          Value: true
+        RF_BEARING:
+          Value: true
+        RF_KNUCKLE:
+          Value: true
+        RF_PARALLEL:
+          Value: true
+        RF_SWIVEL:
+          Value: true
+        RF_WHEEL:
+          Value: true
+        RF_WHEEL_CONTACT:
+          Value: true
+        RH_BEAM:
+          Value: true
+        RH_KNUCKLE:
+          Value: true
+        RH_OUTRIGGER:
+          Value: true
+        RH_ROTATOR:
+          Value: true
+        RH_WHEEL:
+          Value: true
+        RH_WHEEL_CONTACT:
+          Value: true
+        ROTO:
+          Value: true
         ROTO_BASE:
+          Value: true
+        SHOVEL:
           Value: true
         STICK:
           Value: true
@@ -117,7 +193,15 @@ Visualization Manager:
           Value: true
         map:
           Value: true
+        os0_lidar:
+          Value: true
+        os_imu:
+          Value: true
+        os_lidar:
+          Value: true
         os_sensor:
+          Value: true
+        roof_top_box:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -129,9 +213,85 @@ Visualization Manager:
           base_link:
             BASE:
               {}
+            BASE_inertia:
+              {}
             BOOM:
               {}
+            CABIN:
+              {}
+            ENDEFFECTOR:
+              {}
+            ENDEFFECTOR_CONTACT:
+              {}
+            GNSS_L:
+              {}
+            GNSS_R:
+              {}
+            IMU_CABIN_base_link:
+              {}
+            IMU_CABIN_link:
+              {}
+            IMU_base_link:
+              {}
+            IMU_link:
+              {}
+            LF_BEAM:
+              {}
+            LF_BEARING:
+              {}
+            LF_KNUCKLE:
+              {}
+            LF_PARALLEL:
+              {}
+            LF_SWIVEL:
+              {}
+            LF_WHEEL:
+              {}
+            LF_WHEEL_CONTACT:
+              {}
+            LH_BEAM:
+              {}
+            LH_KNUCKLE:
+              {}
+            LH_OUTRIGGER:
+              {}
+            LH_ROTATOR:
+              {}
+            LH_WHEEL:
+              {}
+            LH_WHEEL_CONTACT:
+              {}
+            RF_BEAM:
+              {}
+            RF_BEARING:
+              {}
+            RF_KNUCKLE:
+              {}
+            RF_PARALLEL:
+              {}
+            RF_SWIVEL:
+              {}
+            RF_WHEEL:
+              {}
+            RF_WHEEL_CONTACT:
+              {}
+            RH_BEAM:
+              {}
+            RH_KNUCKLE:
+              {}
+            RH_OUTRIGGER:
+              {}
+            RH_ROTATOR:
+              {}
+            RH_WHEEL:
+              {}
+            RH_WHEEL_CONTACT:
+              {}
+            ROTO:
+              {}
             ROTO_BASE:
+              {}
+            SHOVEL:
               {}
             STICK:
               {}
@@ -139,9 +299,51 @@ Visualization Manager:
               {}
             camMainView:
               {}
+            os0_lidar:
+              {}
+            os_imu:
+              {}
+            os_lidar:
+              {}
             os_sensor:
               {}
+            roof_top_box:
+              {}
       Update Interval: 0
+      Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.009999999776482582
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ouster_points_self_filtered
+      Use Fixed Frame: true
+      Use rainbow: true
       Value: true
   Enabled: true
   Global Options:
@@ -189,25 +391,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 21.48488426208496
+      Distance: 11.216116905212402
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 1.1907663345336914
+        Y: 0.18037347495555878
+        Z: 1.2153563499450684
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.6603981256484985
+      Pitch: 0.175398588180542
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.1653977632522583
+      Yaw: 0.4353988468647003
     Saved: ~
 Window Geometry:
   Displays:
@@ -227,5 +429,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 60
-  Y: 192
+  X: 567
+  Y: 261

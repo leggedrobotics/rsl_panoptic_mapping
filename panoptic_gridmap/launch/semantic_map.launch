@@ -1,9 +1,0 @@
-<launch>
-    <arg name="config_dir" default="$(find panoptic_gridmap)/config" />
-    <arg name="using_ids" default="true" />
-
-    <node pkg="panoptic_gridmap" type="panoptic_gridmap" name="panoptic_gridmap" output="screen">
-        <param name="config_dir" value="$(arg config_dir)" />
-        <param name="using_ids" value="$(arg using_ids)" />
-    </node>
-</launch>

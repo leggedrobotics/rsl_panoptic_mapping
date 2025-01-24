@@ -48,6 +48,7 @@ void MovingObjectsFilter::updateCameraProjection(const Eigen::Matrix<double, 3, 
     cameraProjection_ = newProjection;
     projector_.setCameraProjectionMatrix(cameraProjection_);
   }
+
 }
 
 std::vector<BoundingBox> MovingObjectsFilter::tracksToBoundingBoxes() {
