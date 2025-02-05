@@ -40,7 +40,7 @@ Eigen::Matrix<double, 9, 1> stateFromDetection(const Detection& det);
 double mahalanobis(const Eigen::VectorXd& state1, const Eigen::VectorXd& state2, const Eigen::MatrixXd& cov1);
 
 // Generate PointCloud2 from labeled clusters
-sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters);
+sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters, const builtin_interfaces::msg::Time& stamp);
 
 // Convert Eigen matrix to ROS2 PointCloud2
 sensor_msgs::msg::PointCloud2 eigenToRos(const Eigen::Matrix4Xd& cloud, const std::string& frame_id);

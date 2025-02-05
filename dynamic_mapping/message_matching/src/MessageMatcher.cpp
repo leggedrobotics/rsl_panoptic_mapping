@@ -19,7 +19,7 @@ void MessageMatcher::getParameters()
   node_->declare_parameter<std::string>("pointcloud_topic", "pointcloud");
   node_->declare_parameter<std::string>("image_topic", "cameraImage");
   node_->declare_parameter<std::string>("output_topic", "matched_messages");
-  node_->declare_parameter<double>("lidar_frequency", 2.5);
+  node_->declare_parameter<double>("lidar_frequency", 2.0);
   node_->declare_parameter<double>("sensor_offset", 0.0);
 
   // Retrieve them into outParams_
@@ -64,19 +64,19 @@ void MessageMatcher::setupRos()
     std::make_shared<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>>(
         node_,
         outParams_.pointCloudTopic_,
-        rclcpp::QoS(10).get_rmw_qos_profile()  // convert QoS to rmw
+        rclcpp::QoS(20).get_rmw_qos_profile()  // convert QoS to rmw
     );
 
   cameraImageSubscriber_ =
     std::make_shared<message_filters::Subscriber<sensor_msgs::msg::CompressedImage>>(
         node_,
         outParams_.cameraTopic_,
-        rclcpp::QoS(10).get_rmw_qos_profile()
+        rclcpp::QoS(20).get_rmw_qos_profile()
     );
 
   // Create synchronizer
   sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
-      SyncPolicy(40 /* queue size */),
+      SyncPolicy(20 /* queue size */),
       *pointCloudSubscriber_,
       *cameraImageSubscriber_);
 

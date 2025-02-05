@@ -262,8 +262,9 @@ void DynamicMappingRos::maskCallback(const sensor_msgs::msg::PointCloud2& noGnd,
   cv::Mat segmentationMask = shouldUndistort_ ? undistortMask(image) : image;
   filter_->setCameraTransform(tf2::transformToEigen(worldToCamera.transform));
   filter_->updateLabels(noGroundCloud, segmentationMask, noGnd.header.stamp.sec + noGnd.header.stamp.nanosec * 1e-9);
+  
   if (verbose_) {
-    pub_->publish(generateClusterPointCloud(filter_->getLabelledClusters()));
+    pub_->publish(generateClusterPointCloud(filter_->getLabelledClusters(), noGnd.header.stamp));
   }
 }
 

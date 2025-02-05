@@ -59,7 +59,7 @@ double mahalanobis(const Eigen::VectorXd& state1, const Eigen::VectorXd& state2,
 }
 
 // Generate labeled cluster PointCloud2
-sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters) {  int numCols = 0;
+sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen::Matrix4Xd>& labelledClusters,  const builtin_interfaces::msg::Time& stamp) {  int numCols = 0;
   for (const auto& mat : labelledClusters) {
     numCols += mat.cols();
   }
@@ -77,7 +77,7 @@ sensor_msgs::msg::PointCloud2 generateClusterPointCloud(const std::vector<Eigen:
   outCloud.height = 1;
   outCloud.width = concatMat.cols();
   outCloud.header.frame_id = "map";
-  outCloud.header.stamp = rclcpp::Clock().now();
+  outCloud.header.stamp = stamp;
 
   sensor_msgs::PointCloud2Modifier outCloudModifier(outCloud);
   outCloudModifier.setPointCloud2Fields(5, "x", 1, sensor_msgs::msg::PointField::FLOAT32, "y", 1, sensor_msgs::msg::PointField::FLOAT32,
