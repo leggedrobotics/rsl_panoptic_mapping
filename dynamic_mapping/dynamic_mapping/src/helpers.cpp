@@ -240,7 +240,7 @@ double minDistanceToFrame(const BoundingBox& box, const Eigen::Isometry3d& frame
   return minDistance;
 }
 
-// Create a Marker message for visualization
+
 visualization_msgs::msg::Marker createMarker(const BoundingBox& box) {
   visualization_msgs::msg::Marker marker;
   
@@ -273,9 +273,15 @@ visualization_msgs::msg::Marker createMarker(const BoundingBox& box) {
   // Set marker lifetime
   marker.lifetime = rclcpp::Duration::from_seconds(0.25);
 
-  // Generate marker text
+  // Generate marker text with a safe lookup into idToLabel
   std::stringstream ss;
-  ss << idToLabel.at(box.label) << "\n vel.: " << box.velocity;
+  auto it = idToLabel.find(box.label);
+  if (it != idToLabel.end()) {
+    ss << it->second;
+  } else {
+    ss << "Unknown label (" << box.label << ")";
+  }
+  ss << "\n vel.: " << box.velocity;
   marker.text = ss.str();
 
   return marker;

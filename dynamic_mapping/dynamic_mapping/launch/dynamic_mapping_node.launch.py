@@ -50,7 +50,9 @@ def generate_launch_description():
         'launch_rviz', default_value='true', description='Whether to launch RViz'
     )
     launch_prefix_arg = DeclareLaunchArgument(
-        'launch_prefix', default_value='', description='Launch prefix for debugging'
+        'launch_prefix', 
+        default_value='',  # Empty by default
+        description='Launch prefix for debugging. To debug with gdb use: "gdb -ex run -ex bt -ex quit --args"'
     )
 
     # Define group actions for tf publishing
@@ -96,7 +98,6 @@ def generate_launch_description():
         name='message_matching',
         output='screen',
         parameters=[LaunchConfiguration('message_matching_config_file')],
-        prefix=LaunchConfiguration('launch_prefix')
     )
 
     # Define the RViz node
