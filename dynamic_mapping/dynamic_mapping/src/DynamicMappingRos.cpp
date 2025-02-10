@@ -49,8 +49,8 @@ DynamicMappingRos::DynamicMappingRos(
   filter_->updateCameraProjection(cameraProjection_);
   cameraInfoSubscriber_ = node_->create_subscription<sensor_msgs::msg::CameraInfo>(
       generalParameters.cameraInfoTopic, 1, std::bind(&DynamicMappingRos::cameraInfoCallback, this, std::placeholders::_1));
-}
-cameraInfoSubscriber_
+} 
+
 void DynamicMappingRos::callback(
     sensor_msgs::msg::PointCloud2 raw, sensor_msgs::msg::PointCloud2 noGnd, sensor_msgs::msg::Image cam) {
   
