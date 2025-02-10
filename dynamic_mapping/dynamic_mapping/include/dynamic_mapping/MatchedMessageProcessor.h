@@ -5,7 +5,7 @@
 #include <ground_remover/elevation_map_ground_remover.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <pcl_conversions/pcl_conversions.h>
-#include <sensor_msgs/msg/compressed_image.hpp>
+// #include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include "dynamic_mapping/Parameters.h"
@@ -28,7 +28,7 @@ public:
   void registerCallbackFunction(
       std::function<void(sensor_msgs::msg::PointCloud2,
                          sensor_msgs::msg::PointCloud2,
-                         sensor_msgs::msg::CompressedImage)> callback);
+                         sensor_msgs::msg::Image)> callback);
 
   void registerMaskCallbackFunction(
       std::function<void(sensor_msgs::msg::PointCloud2,
@@ -40,7 +40,7 @@ private:
   sensor_msgs::msg::PointCloud2 removeGround(const sensor_msgs::msg::PointCloud2& inCloud);
 
   rclcpp::Node::SharedPtr node_;
-  rclcpp::Publisher<sensor_msgs::msg::CompressedImage>::SharedPtr rawCamImagePublisher_;
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr rawCamImagePublisher_;
   rclcpp::Subscription<message_matching_msgs::msg::MatchedPair>::SharedPtr matchedMessageSubscriber_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr segMaskSubscriber_;
 
@@ -53,7 +53,7 @@ private:
 
   std::function<void(sensor_msgs::msg::PointCloud2,
                      sensor_msgs::msg::PointCloud2,
-                     sensor_msgs::msg::CompressedImage)>
+                     sensor_msgs::msg::Image)>
       callback_;
 
   std::function<void(sensor_msgs::msg::PointCloud2, sensor_msgs::msg::Image)> maskCallback_;

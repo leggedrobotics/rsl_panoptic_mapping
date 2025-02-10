@@ -10,10 +10,11 @@ MatchedMessageProcessor::MatchedMessageProcessor(
     float groundRemovalVoxelSize)
     : node_(node) {
   // Initialize ground remover
-  groundRemover_ = std::make_unique<ground_remover::ElevationMapGroundRemover>(groundRemovalConfig, groundRemovalVoxelSize, node_);
+  groundRemover_ = std::make_unique<ground_remover::ElevationMapGroundRemover>(
+      groundRemovalConfig, groundRemovalVoxelSize, node_);
 
-  // Publisher for raw camera image
-  rawCamImagePublisher_ = node_->create_publisher<sensor_msgs::msg::CompressedImage>("republished_image", 10);
+  // Publisher for raw camera image (now using sensor_msgs::msg::Image)
+  rawCamImagePublisher_ = node_->create_publisher<sensor_msgs::msg::Image>("republished_image", 10);
 
   // Subscriber for matched messages
   matchedMessageSubscriber_ = node_->create_subscription<message_matching_msgs::msg::MatchedPair>(
@@ -38,16 +39,17 @@ void MatchedMessageProcessor::matchingCallback(const message_matching_msgs::msg:
       waitingForSegmentationMask_ = true;
     }
 
-    // Publish the raw camera image
+    // Publish the raw camera image (now a sensor_msgs::msg::Image)
     rawCamImagePublisher_->publish(matchedMsg->camera_image);
   }
 
-  // Call the callback function with the matched message data
+  // Call the registered callback function with the matched message data
+  // Note: The third parameter is now a sensor_msgs::msg::Image (not a compressed image)
   callback_(matchedMsg->point_cloud, groundRemovedCloud, matchedMsg->camera_image);
 }
 
-
-sensor_msgs::msg::PointCloud2 MatchedMessageProcessor::removeGround(const sensor_msgs::msg::PointCloud2& inCloud) {
+sensor_msgs::msg::PointCloud2 MatchedMessageProcessor::removeGround(
+    const sensor_msgs::msg::PointCloud2& inCloud) {
   // Declare input and output point clouds
   ground_remover::PointCloud in;
   ground_remover::PointCloud out;
@@ -62,7 +64,7 @@ sensor_msgs::msg::PointCloud2 MatchedMessageProcessor::removeGround(const sensor
   // Convert PCL format back to ROS2 message
   pcl::toROSMsg(out, outCloud);
 
-  // Copy the timestamp from the input cloud to the output cloud
+  // Copy the timestamp and frame ID from the input cloud to the output cloud
   outCloud.header.stamp = inCloud.header.stamp;
   outCloud.header.frame_id = inCloud.header.frame_id;
 
@@ -84,13 +86,14 @@ void MatchedMessageProcessor::segMaskCallback(const sensor_msgs::msg::Image::Sha
     waitingForSegmentationMask_ = false;
   }
 
-  // Call the mask callback with the ground-removed cloud and the segmentation mask
+  // Call the registered mask callback with the ground-removed cloud and the segmentation mask
   maskCallback_(groundRemovedCloud, *img);
 }
 
-
 void MatchedMessageProcessor::registerCallbackFunction(
-    std::function<void(sensor_msgs::msg::PointCloud2, sensor_msgs::msg::PointCloud2, sensor_msgs::msg::CompressedImage)> callback) {
+    std::function<void(sensor_msgs::msg::PointCloud2,
+                       sensor_msgs::msg::PointCloud2,
+                       sensor_msgs::msg::Image)> callback) {
   callback_ = std::move(callback);
 }
 

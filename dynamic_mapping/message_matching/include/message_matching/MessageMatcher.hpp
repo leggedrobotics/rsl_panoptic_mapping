@@ -5,8 +5,8 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
-//#include <sensor_msgs/msg/image.hpp>
+// Use uncompressed images instead of compressed ones:
+#include <sensor_msgs/msg/image.hpp>
 #include <message_matching_msgs/msg/matched_pair.hpp>
 
 // ROS2 message_filters includes
@@ -33,10 +33,10 @@ private:
   void setupRos();
 
   /**
-   * @brief Callback that receives synchronized PointCloud2 + CompressedImage
+   * @brief Callback that receives synchronized PointCloud2 + Image
    */
   void synchronizedCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud,
-                            const sensor_msgs::msg::CompressedImage::ConstSharedPtr & image);
+                            const sensor_msgs::msg::Image::ConstSharedPtr & image);
 
   /**
    * @brief Apply rotation compensation to the incoming point cloud
@@ -49,32 +49,29 @@ private:
    */
   bool publishMatchedMessages(
     const sensor_msgs::msg::PointCloud2::ConstSharedPtr & matchedPointCloud,
-    const sensor_msgs::msg::CompressedImage::ConstSharedPtr & matchedCameraImage);
+    const sensor_msgs::msg::Image::ConstSharedPtr & matchedCameraImage);
 
 private:
   rclcpp::Node::SharedPtr node_;
   Parameters outParams_;
 
   // Subscribers (message_filters style)
-    rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudOnlySubscriber_;
-    rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr ImageOnlySubscriber_;
-
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointCloudOnlySubscriber_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr imageOnlySubscriber_;
 
   std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::PointCloud2>> pointCloudSubscriber_;
-  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::CompressedImage>> cameraImageSubscriber_;
+  std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>> cameraImageSubscriber_;
 
-  void cameraImageCallback(const sensor_msgs::msg::CompressedImage::ConstSharedPtr & msg);
+  void cameraImageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg);
   void pointCloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
 
-
-
-  // Synchronizer
+  // Synchronizer using uncompressed images
   using SyncPolicy = message_filters::sync_policies::ApproximateTime<
       sensor_msgs::msg::PointCloud2,
-      sensor_msgs::msg::CompressedImage>;
+      sensor_msgs::msg::Image>;
   std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
 
-  // Publisher
+  // Publisher for matched messages
   rclcpp::Publisher<message_matching_msgs::msg::MatchedPair>::SharedPtr matchedMessagesPublisher_;
 };
 

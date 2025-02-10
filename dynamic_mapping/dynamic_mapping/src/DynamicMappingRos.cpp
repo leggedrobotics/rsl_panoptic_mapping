@@ -50,9 +50,9 @@ DynamicMappingRos::DynamicMappingRos(
   cameraInfoSubscriber_ = node_->create_subscription<sensor_msgs::msg::CameraInfo>(
       generalParameters.cameraInfoTopic, 1, std::bind(&DynamicMappingRos::cameraInfoCallback, this, std::placeholders::_1));
 }
-
+cameraInfoSubscriber_
 void DynamicMappingRos::callback(
-    sensor_msgs::msg::PointCloud2 raw, sensor_msgs::msg::PointCloud2 noGnd, sensor_msgs::msg::CompressedImage cam) {
+    sensor_msgs::msg::PointCloud2 raw, sensor_msgs::msg::PointCloud2 noGnd, sensor_msgs::msg::Image cam) {
   
 
   std::cout<<"callback  called"<<std::endl;
@@ -62,15 +62,22 @@ void DynamicMappingRos::callback(
    }
   
 
-  // Convert the compressed image data to a cv::Mat
-  cv::Mat decodedImage = cv::imdecode(cv::Mat(cam.data), cv::IMREAD_COLOR);
-  if (decodedImage.empty()) {
-      std::cerr << "Failed to decode compressed image!" << std::endl;
-      return;
-  }
+    // Convert the incoming image message to a cv::Mat using cv_bridge
+    cv_bridge::CvImagePtr cv_ptr;
+    try {
+        cv_ptr = cv_bridge::toCvCopy(cam, sensor_msgs::image_encodings::BGR8);
+    } catch (cv_bridge::Exception& e) {
+        RCLCPP_ERROR(node_->get_logger(), "cv_bridge exception: %s", e.what());
+        return;
+    }
+    cv::Mat image = cv_ptr->image;
+    if (image.empty()) {
+        std::cerr << "Empty image received!" << std::endl;
+        return;
+    }
   // Get the height and width of the image
-  int height = decodedImage.rows;
-  int width = decodedImage.cols;
+  int height = image.rows;
+  int width = image.cols;
 
   auto start = std::chrono::high_resolution_clock::now();
   {

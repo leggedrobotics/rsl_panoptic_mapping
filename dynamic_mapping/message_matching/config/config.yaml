@@ -1,7 +1,7 @@
 message_matching:
   ros__parameters:
     pointcloud_topic: "/ouster_points_self_filtered"
-    image_topic: "/camMainView/image_raw/compressed"
+    image_topic: "/camMainView/image_raw"
     output_topic: "matched_messages"
     lidar_frequency: 10.0 # Hz
     sensor_offset: 0.75

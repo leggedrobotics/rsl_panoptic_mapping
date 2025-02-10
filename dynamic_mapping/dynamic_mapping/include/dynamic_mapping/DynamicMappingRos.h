@@ -3,7 +3,7 @@
 
 #include <dynamic_mapping_msgs/msg/track.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
-#include <sensor_msgs/msg/compressed_image.hpp>
+//#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <tf2_ros/buffer.h>
@@ -28,7 +28,7 @@ class DynamicMappingRos {
 
   void callback(sensor_msgs::msg::PointCloud2 raw,
                 sensor_msgs::msg::PointCloud2 noGnd,
-                sensor_msgs::msg::CompressedImage cam);
+                sensor_msgs::msg::Image cam);
 
   void maskCallback(const sensor_msgs::msg::PointCloud2& noGnd,
                     const sensor_msgs::msg::Image& mask);

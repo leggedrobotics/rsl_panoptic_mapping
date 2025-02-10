@@ -2,4 +2,4 @@
 std_msgs/Header header
 
 sensor_msgs/PointCloud2 point_cloud
-sensor_msgs/CompressedImage camera_image
+sensor_msgs/Image camera_image
