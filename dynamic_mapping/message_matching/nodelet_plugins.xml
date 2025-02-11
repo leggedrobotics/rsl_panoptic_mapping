@@ -1,0 +1,5 @@
+<library path="lib/libmessage_matching">
+    <class name="message_matching_nodelet" type="MessageMatchingNodelet" base_class_type="nodelet::Nodelet">
+        <description>Message Matching Nodelet</description>
+    </class>
+</library>

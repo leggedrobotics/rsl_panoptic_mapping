@@ -102,9 +102,9 @@ void DynamicMappingRos::callback(
 
   geometry_msgs::msg::TransformStamped lidarToWorld, worldToCamera, worldToLidar, shovelFrame;
   try {
-    lidarToWorld = tfBuffer_.lookupTransform("map", "os0_lidar", tf2::TimePointZero);
+    lidarToWorld = tfBuffer_.lookupTransform("map", "os_lidar", tf2::TimePointZero);
     worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", tf2::TimePointZero);
-    worldToLidar = tfBuffer_.lookupTransform("os0_lidar", "map", tf2::TimePointZero);
+    worldToLidar = tfBuffer_.lookupTransform("os_lidar", "map", tf2::TimePointZero);
     shovelFrame = tfBuffer_.lookupTransform("map", "SHOVEL", tf2::TimePointZero); // TODO: Change to shovel frame
   } catch (tf2::TransformException& e) {
     RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
@@ -234,7 +234,7 @@ void DynamicMappingRos::maskCallback(const sensor_msgs::msg::PointCloud2& noGnd,
   maskCallback_called_ = true;
   geometry_msgs::msg::TransformStamped lidarToWorld, worldToCamera;
   try {
-    lidarToWorld = tfBuffer_.lookupTransform("map", "os0_lidar", tf2::TimePointZero);
+    lidarToWorld = tfBuffer_.lookupTransform("map", "os_lidar", tf2::TimePointZero);
     worldToCamera = tfBuffer_.lookupTransform("camMainView", "map", tf2::TimePointZero);
   } catch (tf2::TransformException& e) {
     RCLCPP_ERROR(node_->get_logger(), "%s", e.what());
