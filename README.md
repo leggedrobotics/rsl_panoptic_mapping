@@ -1,6 +1,6 @@
 # RSL Panoptic Mapping
 
-![overview.png](docs%2Foverview.png)
+![overview.png](docs/overview.png)
 
 RSL Panoptic Mapping is a ROS package for advanced environment understanding and navigation. It uses semantic segmentation and dynamic object tracking to create detailed panoptic maps, distinguishing between movable and static objects.
 
@@ -49,3 +49,14 @@ Ensure ROS is installed. This package depends on several external ROS packages a
     ```bash
     roslaunch panoptic_gridmap semantic_map.launch
     ```
+
+## Reference
+If you find this work useful, please consider citing the following paper:
+```
+@article{terenzi2024ethcavation,
+  title={ETHcavation: A Dataset and Pipeline for Panoptic Scene Understanding and Object Tracking in Dynamic Construction Environments},
+  author={Terenzi, Lorenzo and Nubert, Julian and Eyschen, Pol and Roth, Pascal and Fei, Simin and Jelavic, Edo and Hutter, Marco},
+  journal={arXiv preprint arXiv:2410.04250},
+  year={2024}
+}
+```
